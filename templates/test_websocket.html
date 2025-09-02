@@ -1,0 +1,212 @@
+{% extends 'base/base.html' %}
+
+{% block title %}WebSocket認証テスト{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>WebSocket認証テスト</h1>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>接続状況</h5>
+                </div>
+                <div class="card-body">
+                    <div id="status" class="alert alert-secondary">未接続</div>
+                    <button class="btn btn-success me-2" onclick="connect()">接続</button>
+                    <button class="btn btn-danger" onclick="disconnect()">切断</button>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5>メッセージ送信</h5>
+                </div>
+                <div class="card-body">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="messageInput" placeholder="メッセージを入力">
+                        <button class="btn btn-primary" onclick="sendMessage()">送信</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between">
+                    <h5>ログ</h5>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="clearLog()">クリア</button>
+                </div>
+                <div class="card-body">
+                    <div id="log" style="height: 400px; overflow-y: scroll; background: #f8f9fa; padding: 10px; font-family: monospace; font-size: 12px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let chatSocket = null;
+    const roomName = 'test_room';
+    
+    // Cookie取得用ヘルパー関数
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    function log(message, type = 'info') {
+        const logDiv = document.getElementById('log');
+        const timestamp = new Date().toLocaleTimeString();
+        const colorClass = type === 'error' ? 'text-danger' : (type === 'success' ? 'text-success' : 'text-info');
+        logDiv.innerHTML += `<div class="${colorClass}">[${timestamp}] ${message}</div>`;
+        logDiv.scrollTop = logDiv.scrollHeight;
+    }
+    
+    function updateStatus(status, type = 'secondary') {
+        const statusDiv = document.getElementById('status');
+        statusDiv.className = `alert alert-${type}`;
+        statusDiv.textContent = status;
+    }
+    
+    function connect() {
+        if (chatSocket) {
+            log('既に接続されています', 'error');
+            return;
+        }
+        
+        // Cookieの確認
+        const cookies = document.cookie;
+        log(`現在のCookie: ${cookies}`, 'info');
+        
+        // CSRFトークンの確認（セッションIDはHttpOnlyのためJSからアクセス不可）
+        const csrfToken = getCookie('csrftoken');
+        
+        log(`✅ CSRFトークン: ${csrfToken ? csrfToken.substring(0, 10) + '...' : 'なし'}`, 'info');
+        log(`ℹ️ セッションIDはHttpOnlyのためJS側では確認できません`, 'info');
+        
+        // ChatConsumerに戻してセッション問題をテスト
+        const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
+        const wsPath = `${wsScheme}://${window.location.host}/ws/chat/${roomName}/`;
+        
+        log(`🔧 デバッグ: ChatConsumerでセッション問題をテスト`, 'info');
+        
+        log(`接続試行: ${wsPath}`);
+        updateStatus('接続中...', 'warning');
+        
+        chatSocket = new WebSocket(wsPath);
+        
+        chatSocket.onopen = function(e) {
+            log('WebSocket接続成功！', 'success');
+            updateStatus('接続済み', 'success');
+        };
+        
+        chatSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            log(`受信: ${JSON.stringify(data, null, 2)}`, 'success');
+            
+            if (data.error) {
+                log(`エラー: ${data.error}`, 'error');
+            }
+            
+            if (data.message_type === 'auth_error') {
+                log('認証エラーが発生しました。ログインしてからお試しください。', 'error');
+                updateStatus('認証エラー', 'danger');
+            }
+        };
+        
+        chatSocket.onclose = function(e) {
+            log(`WebSocket切断 (code: ${e.code})`, 'error');
+            updateStatus('切断済み', 'secondary');
+            chatSocket = null;
+        };
+        
+        chatSocket.onerror = function(e) {
+            log('WebSocketエラー', 'error');
+            updateStatus('エラー', 'danger');
+        };
+    }
+    
+    function disconnect() {
+        if (chatSocket) {
+            chatSocket.close();
+            chatSocket = null;
+            updateStatus('切断済み', 'secondary');
+            log('WebSocket切断');
+        }
+    }
+    
+    function sendMessage() {
+        const messageInput = document.getElementById('messageInput');
+        const message = messageInput.value.trim();
+        
+        if (!message) {
+            log('メッセージを入力してください', 'error');
+            return;
+        }
+        
+        if (!chatSocket) {
+            log('WebSocketに接続してください', 'error');
+            return;
+        }
+        
+        if (chatSocket.readyState !== WebSocket.OPEN) {
+            log('WebSocket接続が確立されていません', 'error');
+            return;
+        }
+        
+        // 送信前の状態確認
+        log(`🔍 送信前チェック:`, 'info');
+        log(`  - WebSocket状態: ${chatSocket.readyState === WebSocket.OPEN ? 'OPEN' : 'NOT_OPEN'}`, 'info');
+        log(`  - セッション: サーバーサイドで確認`, 'info');
+        
+        const data = {
+            'message': message
+        };
+        
+        log(`📤 送信: ${message}`, 'info');
+        log(`📤 送信データ: ${JSON.stringify(data)}`, 'info');
+        
+        try {
+            chatSocket.send(JSON.stringify(data));
+            messageInput.value = '';
+        } catch (error) {
+            log(`❌ 送信エラー: ${error.message}`, 'error');
+        }
+    }
+    
+    function clearLog() {
+        document.getElementById('log').innerHTML = '';
+    }
+    
+    // Enter keyでメッセージ送信
+    document.getElementById('messageInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            sendMessage();
+        }
+    });
+    
+    // ページロード時の説明
+    window.onload = function() {
+        {% if user.is_authenticated %}
+            log('✅ ログイン済み: {{ user.username }}', 'success');
+            log('「接続」ボタンをクリックしてWebSocket接続をテストしてください');
+        {% else %}
+            log('❌ 未ログイン状態です', 'error');
+            log('まず <a href="{% url "accounts:login" %}" target="_blank">ログイン</a> してからテストしてください');
+        {% endif %}
+        log('WebSocket認証テストページです');
+    };
+</script>
+{% endblock %}

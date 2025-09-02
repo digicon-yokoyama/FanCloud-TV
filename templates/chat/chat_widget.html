@@ -39,14 +39,69 @@
 <script>
 let chatSocket = null;
 
+function testWebSocket() {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const testUrl = protocol + '//' + window.location.host + '/ws/test/';
+    console.log('🧪 WS TEST: Connecting to:', testUrl);
+
+    const testSocket = new WebSocket(testUrl);
+
+    testSocket.onopen = function(e) {
+        console.log('🧪 WS TEST: Connected successfully');
+    };
+
+    testSocket.onmessage = function(e) {
+        console.log('🧪 WS TEST: Received message:', e.data);
+    };
+
+    testSocket.onclose = function(e) {
+        console.log('🧪 WS TEST: Connection closed');
+    };
+
+    testSocket.onerror = function(e) {
+        console.error('🧪 WS TEST: Error:', e);
+    };
+}
+
+function testSimpleChat() {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const simpleChatUrl = protocol + '//' + window.location.host + '/ws/simple_chat/{{ video.stream_id }}/';
+    console.log('🔌 WS SIMPLE TEST: Connecting to:', simpleChatUrl);
+
+    const simpleSocket = new WebSocket(simpleChatUrl);
+
+    simpleSocket.onopen = function(e) {
+        console.log('🔌 WS SIMPLE TEST: Connected successfully');
+    };
+
+    simpleSocket.onmessage = function(e) {
+        console.log('🔌 WS SIMPLE TEST: Received message:', e.data);
+    };
+
+    simpleSocket.onclose = function(e) {
+        console.log('🔌 WS SIMPLE TEST: Connection closed');
+    };
+
+    simpleSocket.onerror = function(e) {
+        console.error('🔌 WS SIMPLE TEST: Error:', e);
+    };
+}
+
 function initializeChat() {
+    // 複数のテスト接続を試す
+    console.log('🧪 Starting WebSocket tests...');
+    testWebSocket();
+    testSimpleChat();
+
     if (!chatSocket) {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        chatSocket = new WebSocket(
-            protocol + '//' + window.location.host + '/ws/chat/{{ video.stream_id }}/'
-        );
-        
+        const wsUrl = protocol + '//' + window.location.host + '/ws/chat/{{ video.stream_id }}/';
+        console.log('🔌 WS: Connecting to:', wsUrl);
+
+        chatSocket = new WebSocket(wsUrl);
+
         chatSocket.onopen = function(e) {
+            console.log('🔌 WS: Connected successfully');
             document.getElementById('send-chat').disabled = false;
         };
         

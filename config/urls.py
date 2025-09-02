@@ -5,6 +5,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.shortcuts import render
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -15,6 +16,9 @@ urlpatterns = [
     path('api/chat/', include('apps.chat.urls')),
     path('api/notifications/', include('apps.notifications.urls')),
     path('api/analytics/', include('apps.analytics.urls')),
+    
+    # Test endpoints (development only)
+    path('test-websocket/', lambda request: render(request, 'test_websocket.html'), name='test_websocket'),
     
     # Main application views
     path('', include('apps.streaming.urls')),
