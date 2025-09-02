@@ -1,0 +1,1042 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}配信管理 - {{ stream.title }} - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<style>
+:root {
+    --youtube-red: #ff0000;
+    --light-bg: #f9f9f9;
+    --card-bg: #ffffff;
+    --border-color: #e0e0e0;
+    --text-primary: #212529;
+    --text-secondary: #6c757d;
+    --hover-bg: #f5f5f5;
+}
+
+.youtube-dashboard {
+    background: var(--light-bg);
+    min-height: calc(100vh - 76px);
+    color: var(--text-primary);
+}
+
+.preview-section {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.stream-preview {
+    width: 100%;
+    aspect-ratio: 16/9;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.preview-content {
+    text-align: center;
+    color: white;
+}
+
+
+.stream-status-indicator {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    z-index: 5;
+    color: white;
+}
+
+.status-created { background: #2196f3; }
+.status-live { background: var(--youtube-red); }
+.status-ended { background: #666; }
+.status-error { background: #ff9800; }
+
+.preview-info {
+    padding: 16px;
+    border-top: 1px solid var(--border-color);
+    background: var(--card-bg);
+    position: relative;
+    z-index: 10;
+}
+
+.stream-help-text {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 16px;
+    display: flex;
+    align-items: center;
+}
+
+.stream-help-text i {
+    margin-right: 8px;
+    color: var(--text-secondary);
+}
+
+.settings-section {
+    background: var(--card-bg);
+    border-radius: 12px;
+    height: fit-content;
+}
+
+.settings-header {
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.settings-body {
+    padding: 24px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
+.form-control {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--light-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 14px;
+    transition: border-color 0.2s;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #2196f3;
+    background: var(--light-bg);
+    color: var(--text-primary);
+}
+
+.form-control::placeholder {
+    color: var(--text-secondary);
+}
+
+.form-select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23aaa' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+}
+
+.viewer-count {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.live-indicator {
+    width: 8px;
+    height: 8px;
+    background: var(--youtube-red);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+.dashboard-tabs {
+    background: var(--card-bg);
+    border-radius: 12px;
+    margin-top: 24px;
+    overflow: hidden;
+}
+
+.tab-nav {
+    display: flex;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--card-bg);
+}
+
+.tab-nav-item {
+    padding: 16px 24px;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.tab-nav-item:hover {
+    background: var(--hover-bg);
+    color: var(--text-primary);
+}
+
+.tab-nav-item.active {
+    color: var(--text-primary);
+    border-bottom-color: #2196f3;
+}
+
+.tab-content {
+    display: none;
+    padding: 24px;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.stream-key-section {
+    background: #f8f9fa;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+}
+
+.input-group {
+    display: flex;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.input-group .form-control {
+    border-radius: 0;
+    border-right: none;
+    flex: 1;
+}
+
+.input-group .btn {
+    border-radius: 0;
+    border: 1px solid var(--border-color);
+    border-left: none;
+}
+
+.btn-youtube {
+    background: #2196f3;
+    border-color: #2196f3;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+.btn-youtube:hover {
+    background: #1976d2;
+    color: white;
+}
+
+.btn-youtube-outline {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn-youtube-outline:hover {
+    background: var(--hover-bg);
+    color: var(--text-primary);
+    border-color: var(--text-secondary);
+}
+
+.btn-youtube-red {
+    background: var(--youtube-red);
+    border-color: var(--youtube-red);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 16px;
+    transition: background-color 0.2s;
+}
+
+.btn-youtube-red:hover {
+    background: #cc0000;
+    color: white;
+}
+
+.quality-selector {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.quality-option {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.quality-option:hover {
+    border-color: #2196f3;
+    background: rgba(33, 150, 243, 0.1);
+}
+
+.quality-option.selected {
+    border-color: #2196f3;
+    background: rgba(33, 150, 243, 0.15);
+}
+
+.quality-radio {
+    margin-right: 12px;
+    accent-color: #2196f3;
+}
+
+.quality-info {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.quality-name {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.quality-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: flex-start;
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border-color);
+}
+
+.toggle-switch {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    background: #ccc;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.toggle-switch.active {
+    background: #2196f3;
+}
+
+.toggle-switch::before {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    top: 2px;
+    left: 2px;
+    transition: transform 0.2s;
+}
+
+.toggle-switch.active::before {
+    transform: translateX(20px);
+}
+
+.setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.setting-row:last-child {
+    border-bottom: none;
+}
+
+.setting-info h6 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.setting-info p {
+    margin: 4px 0 0;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.stat-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.stat-label {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+@media (max-width: 768px) {
+    .youtube-dashboard .row {
+        flex-direction: column;
+    }
+    
+    .youtube-dashboard .col-lg-7,
+    .youtube-dashboard .col-lg-5 {
+        width: 100%;
+        margin-bottom: 16px;
+    }
+    
+    .settings-section {
+        margin-top: 16px;
+    }
+    
+    .tab-nav {
+        flex-wrap: wrap;
+    }
+    
+    .tab-nav-item {
+        flex: 1;
+        text-align: center;
+        font-size: 13px;
+        padding: 12px 8px;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .action-buttons .btn {
+        width: 100%;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+    
+    .quality-selector .quality-option {
+        padding: 8px;
+    }
+    
+    .quality-desc {
+        font-size: 12px !important;
+    }
+}
+
+@media (max-width: 576px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .tab-nav-item {
+        font-size: 12px;
+        padding: 10px 6px;
+    }
+    
+    .settings-header {
+        padding: 16px 20px 12px;
+    }
+    
+    .settings-body {
+        padding: 20px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="youtube-dashboard">
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Left Column: Preview -->
+            <div class="col-lg-7">
+                <div class="preview-section">
+                    <div class="stream-preview">
+                        <div class="stream-status-indicator status-{{ stream.status }}">
+                            {{ stream.get_status_display }}
+                        </div>
+                        <div class="preview-content">
+                            <i class="bi bi-play-circle" style="font-size: 48px; margin-bottom: 16px;"></i>
+                            <h5>配信プレビュー</h5>
+                            <p>配信ソフトに接続してライブ配信を開始します</p>
+                        </div>
+                    </div>
+                    <div class="preview-info">
+                        {% if stream.status == 'live' %}
+                            <div class="viewer-count">
+                                <div class="live-indicator"></div>
+                                <span>{{ stream.viewer_count }} 人が視聴中</span>
+                            </div>
+                        {% else %}
+                            <div class="viewer-count">
+                                <i class="bi bi-circle" style="color: #666;"></i>
+                                <span>配信待機中</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="stream-help-text">
+                    <i class="bi bi-info-circle"></i>
+                    <span>ライブ配信を公開するには、ストリーミング ソフトで画面の送信を開始します</span>
+                </div>
+            </div>
+
+            <!-- Right Column: Settings -->
+            <div class="col-lg-5">
+                <div class="settings-section">
+                    <div class="settings-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 style="margin: 0;">{{ stream.title }}</h5>
+                            <button class="btn btn-youtube-outline btn-sm" onclick="toggleEditMode()">編集</button>
+                        </div>
+                        <div style="margin-top: 8px; color: var(--text-secondary); font-size: 14px;">
+                            カテゴリ: {{ stream.category.name|default:"未設定" }}
+                        </div>
+                        <div style="margin-top: 4px; color: var(--text-secondary); font-size: 14px;">
+                            プライバシー: 
+                            <i class="bi bi-globe" style="margin-right: 4px;"></i>
+                            {{ stream.get_privacy_display }}
+                        </div>
+                        <div style="margin-top: 8px; color: var(--text-secondary); font-size: 13px;">
+                            配信中の現在視聴者数: {{ stream.viewer_count }}
+                        </div>
+                        <div style="color: var(--text-secondary); font-size: 13px;">
+                            高評価の数: 0
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="settings-body">
+                        <div class="action-buttons" style="margin-top: 0; padding-top: 0; border-top: none;">
+                            {% if stream.status == 'created' %}
+                                <form method="post" action="{% url 'streaming:start_stream' stream.stream_id %}" style="flex: 1;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-youtube-red w-100">
+                                        <i class="bi bi-play-circle-fill me-2"></i>配信を開始
+                                    </button>
+                                </form>
+                            {% elif stream.status == 'live' %}
+                                <form method="post" action="{% url 'streaming:end_stream' stream.stream_id %}" style="flex: 1;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-youtube-red w-100">
+                                        <i class="bi bi-stop-circle-fill me-2"></i>配信を終了
+                                    </button>
+                                </form>
+                            {% endif %}
+                            
+                            {% if stream.status == 'live' %}
+                                <a href="{% url 'streaming:watch' stream.stream_id %}" target="_blank" 
+                                   class="btn btn-youtube-outline">
+                                    <i class="bi bi-eye me-1"></i>視聴
+                                </a>
+                            {% endif %}
+                        </div>
+
+                        <div class="action-buttons">
+                            <a href="{% url 'streaming:my_streams' %}" class="btn btn-youtube-outline">
+                                <i class="bi bi-arrow-left me-2"></i>配信一覧に戻る
+                            </a>
+                            {% if stream.status == 'ended' %}
+                                <button class="btn btn-youtube-outline" onclick="deleteStream()">
+                                    <i class="bi bi-trash me-1"></i>削除
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs Section -->
+        <div class="dashboard-tabs">
+            <div class="tab-nav">
+                <button class="tab-nav-item active" data-tab="settings">ライブ配信の設定</button>
+                <button class="tab-nav-item" data-tab="analytics">アナリティクス</button>
+                <button class="tab-nav-item" data-tab="stream-details">ストリームの詳細</button>
+            </div>
+
+            <!-- Settings Tab -->
+            <div class="tab-content active" id="settings">
+                <div class="row">
+                    <div class="col-lg-6">
+                        <!-- メイン配信設定 -->
+                        <h6 style="margin-bottom: 16px;">配信設定</h6>
+                        
+                        <!-- ストリームURL -->
+                        <div class="stream-key-section">
+                            <div class="form-group">
+                                <label class="form-label">ストリームURL</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" value="{{ stream.ingest_url }}" readonly>
+                                    <button class="btn btn-youtube-outline" type="button" onclick="copyToClipboard('{{ stream.ingest_url }}')">
+                                        <i class="bi bi-clipboard"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ストリームキー -->
+                        <div class="stream-key-section">
+                            <div class="form-group">
+                                <label class="form-label">ストリームキー</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="stream-key" 
+                                           value="{{ stream.stream_key }}" readonly>
+                                    <button class="btn btn-youtube-outline" type="button" id="toggle-key">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                    <button class="btn btn-youtube-outline" type="button" onclick="copyToClipboard('{{ stream.stream_key }}')">
+                                        <i class="bi bi-clipboard"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- オプション設定（折りたたみ） -->
+                        <div class="backup-settings mt-4">
+                            <button class="btn btn-link p-0 mb-2" type="button" data-bs-toggle="collapse" data-bs-target="#backupSettings" aria-expanded="false">
+                                <i class="bi bi-chevron-right me-1" id="backup-chevron"></i>
+                                <span>バックアップ設定（オプション）</span>
+                            </button>
+                            
+                            <div class="collapse" id="backupSettings">
+                                <!-- バックアップストリームURL -->
+                                <div class="stream-key-section">
+                                    <div class="form-group">
+                                        <label class="form-label">バックアップストリームURL</label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" value="{{ stream.backup_ingest_url|default:'rtmp://backup.example.com/live' }}" readonly>
+                                            <button class="btn btn-youtube-outline" type="button" onclick="copyToClipboard('{{ stream.backup_ingest_url|default:'' }}')">
+                                                <i class="bi bi-clipboard"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- バックアップストリームキー -->
+                                <div class="stream-key-section">
+                                    <div class="form-group">
+                                        <label class="form-label">バックアップストリームキー</label>
+                                        <div class="input-group">
+                                            <input type="password" class="form-control" id="backup-stream-key" 
+                                                   value="{{ stream.backup_stream_key|default:'backup-key-placeholder' }}" readonly>
+                                            <button class="btn btn-youtube-outline" type="button" id="toggle-backup-key">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            <button class="btn btn-youtube-outline" type="button" onclick="copyToClipboard('{{ stream.backup_stream_key|default:'' }}')">
+                                                <i class="bi bi-clipboard"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6">
+                        <h6 style="margin-bottom: 16px;">その他の設定</h6>
+                        
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <h6>DVR を有効にする</h6>
+                                <p>視聴者が配信を最初から見ることができるようになります</p>
+                            </div>
+                            <div class="toggle-switch {% if stream.is_recording %}active{% endif %}" data-setting="recording">
+                            </div>
+                        </div>
+
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <h6>360° 動画</h6>
+                                <p>360度または180度の動画を配信する場合に有効にします</p>
+                            </div>
+                            <div class="toggle-switch" data-setting="360video">
+                            </div>
+                        </div>
+
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <h6>字幕</h6>
+                                <p>自動生成された字幕を表示します</p>
+                            </div>
+                            <div class="toggle-switch" data-setting="subtitles">
+                            </div>
+                        </div>
+
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <h6>チャットを有効にする</h6>
+                                <p>視聴者がリアルタイムでチャットできるようにします</p>
+                            </div>
+                            <div class="toggle-switch {% if stream.enable_chat %}active{% endif %}" data-setting="chat" id="chat-toggle">
+                            </div>
+                        </div>
+
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <h6>登録者のみチャット</h6>
+                                <p>チャンネル登録者のみがチャットできるようにします</p>
+                            </div>
+                            <div class="toggle-switch {% if stream.subscriber_only_chat %}active{% endif %}" data-setting="subscriber-chat">
+                            </div>
+                        </div>
+
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <h6>配信が終了したらライブのリプレイを限定公開にする</h6>
+                            </div>
+                            <div class="toggle-switch" data-setting="auto-archive">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <h6 style="margin-bottom: 16px;">ライブ配信の遅延</h6>
+                        <div class="quality-selector">
+                            <div class="quality-option selected">
+                                <input type="radio" class="quality-radio" name="latency" value="normal" checked>
+                                <div class="quality-info">
+                                    <div class="quality-name">通常の遅延</div>
+                                    <div class="quality-desc">品質を優先し、遅延は約20秒です</div>
+                                </div>
+                            </div>
+                            <div class="quality-option">
+                                <input type="radio" class="quality-radio" name="latency" value="low">
+                                <div class="quality-info">
+                                    <div class="quality-name">低遅延</div>
+                                    <div class="quality-desc">チャットとの応答性を向上させます（約2-5秒）</div>
+                                </div>
+                            </div>
+                            <div class="quality-option">
+                                <input type="radio" class="quality-radio" name="latency" value="ultra-low">
+                                <div class="quality-info">
+                                    <div class="quality-name">超低遅延</div>
+                                    <div class="quality-desc">最短遅延（約1秒未満）、限定的な配信品質</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics Tab -->
+            <div class="tab-content" id="analytics">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value">{{ stream.viewer_count }}</div>
+                        <div class="stat-label">現在の視聴者</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">{{ stream.peak_viewers }}</div>
+                        <div class="stat-label">最大視聴者</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">{{ stream.total_views }}</div>
+                        <div class="stat-label">総視聴回数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">0</div>
+                        <div class="stat-label">チャットメッセージ</div>
+                    </div>
+                </div>
+                <p style="color: var(--text-secondary); text-align: center; margin-top: 40px;">
+                    詳細なアナリティクス機能は実装予定です
+                </p>
+            </div>
+
+            <!-- Stream Details Tab -->
+            <div class="tab-content" id="stream-details">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">配信品質</label>
+                            <div class="form-control" style="background: var(--light-bg);">
+                                {{ stream.quality }} - {{ stream.bitrate }} kbps - {{ stream.framerate }} FPS
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">接続状態</label>
+                            <div class="form-control" style="background: var(--light-bg);">
+                                {% if stream.status == 'live' %}
+                                    <span style="color: #4caf50;">接続中</span>
+                                {% else %}
+                                    <span style="color: #666;">未接続</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">作成日時</label>
+                            <div class="form-control" style="background: var(--light-bg);">
+                                {{ stream.created_at|date:"Y年n月j日 H:i" }}
+                            </div>
+                        </div>
+                        {% if stream.started_at %}
+                            <div class="form-group">
+                                <label class="form-label">開始日時</label>
+                                <div class="form-control" style="background: var(--light-bg);">
+                                    {{ stream.started_at|date:"Y年n月j日 H:i" }}
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Tab switching
+    const tabButtons = document.querySelectorAll('.tab-nav-item');
+    const tabContents = document.querySelectorAll('.tab-content');
+    
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const targetTab = button.getAttribute('data-tab');
+            
+            // Update active button
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            
+            // Update active content
+            tabContents.forEach(content => {
+                content.classList.remove('active');
+                if (content.id === targetTab) {
+                    content.classList.add('active');
+                }
+            });
+        });
+    });
+    
+    // Toggle stream key visibility
+    const toggleKeyBtn = document.getElementById('toggle-key');
+    const streamKeyInput = document.getElementById('stream-key');
+    
+    if (toggleKeyBtn && streamKeyInput) {
+        toggleKeyBtn.addEventListener('click', () => {
+            if (streamKeyInput.type === 'password') {
+                streamKeyInput.type = 'text';
+                toggleKeyBtn.innerHTML = '<i class="bi bi-eye-slash"></i>';
+            } else {
+                streamKeyInput.type = 'password';
+                toggleKeyBtn.innerHTML = '<i class="bi bi-eye"></i>';
+            }
+        });
+    }
+    
+    // Toggle backup stream key visibility
+    const toggleBackupKeyBtn = document.getElementById('toggle-backup-key');
+    const backupStreamKeyInput = document.getElementById('backup-stream-key');
+    
+    if (toggleBackupKeyBtn && backupStreamKeyInput) {
+        toggleBackupKeyBtn.addEventListener('click', () => {
+            if (backupStreamKeyInput.type === 'password') {
+                backupStreamKeyInput.type = 'text';
+                toggleBackupKeyBtn.innerHTML = '<i class="bi bi-eye-slash"></i>';
+            } else {
+                backupStreamKeyInput.type = 'password';
+                toggleBackupKeyBtn.innerHTML = '<i class="bi bi-eye"></i>';
+            }
+        });
+    }
+    
+    // Backup settings collapse handler
+    const backupSettings = document.getElementById('backupSettings');
+    const backupChevron = document.getElementById('backup-chevron');
+    
+    if (backupSettings && backupChevron) {
+        backupSettings.addEventListener('shown.bs.collapse', () => {
+            backupChevron.classList.remove('bi-chevron-right');
+            backupChevron.classList.add('bi-chevron-down');
+        });
+        
+        backupSettings.addEventListener('hidden.bs.collapse', () => {
+            backupChevron.classList.remove('bi-chevron-down');
+            backupChevron.classList.add('bi-chevron-right');
+        });
+    }
+    
+    // Toggle switches
+    const toggleSwitches = document.querySelectorAll('.toggle-switch');
+    toggleSwitches.forEach(toggle => {
+        toggle.addEventListener('click', () => {
+            const setting = toggle.getAttribute('data-setting');
+            
+            // Handle special settings that need server updates
+            if (setting === 'chat') {
+                toggleChatSetting(toggle);
+            } else {
+                // Regular toggle for other settings
+                toggle.classList.toggle('active');
+            }
+        });
+    });
+    
+    // Quality option selection
+    const qualityOptions = document.querySelectorAll('.quality-option');
+    qualityOptions.forEach(option => {
+        option.addEventListener('click', () => {
+            qualityOptions.forEach(opt => opt.classList.remove('selected'));
+            option.classList.add('selected');
+            
+            const radio = option.querySelector('.quality-radio');
+            if (radio) radio.checked = true;
+        });
+    });
+    
+    // Real-time updates for live streams
+    {% if stream.status == 'live' %}
+        setInterval(updateStreamStats, 30000); // Update every 30 seconds
+    {% endif %}
+});
+
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        // Show temporary success message
+        const btn = event.target.closest('button');
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-check"></i>';
+        setTimeout(() => {
+            btn.innerHTML = originalHtml;
+        }, 1500);
+    });
+}
+
+function updateStreamStats() {
+    fetch(`{% url "streaming:stream_status_api" stream.stream_id %}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.viewer_count !== undefined) {
+                const viewerElements = document.querySelectorAll('[id*="viewer"], .viewer-count span');
+                viewerElements.forEach(el => {
+                    if (el.textContent.includes('人が視聴中')) {
+                        el.textContent = `${data.viewer_count} 人が視聴中`;
+                    }
+                });
+            }
+        })
+        .catch(error => console.log('Stats update failed:', error));
+}
+
+function toggleEditMode() {
+    alert('編集機能は現在開発中です。近日中に実装予定です。');
+}
+
+function toggleChatSetting(toggle) {
+    const isCurrentlyActive = toggle.classList.contains('active');
+    
+    // Optimistic UI update
+    toggle.classList.toggle('active');
+    
+    fetch(`/api/chat/api/toggle/{{ stream.stream_id }}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json'
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            console.log('Chat setting updated:', data.chat_enabled);
+            // UI is already updated optimistically
+        } else {
+            // Revert on failure
+            if (isCurrentlyActive) {
+                toggle.classList.add('active');
+            } else {
+                toggle.classList.remove('active');
+            }
+            alert('チャット設定の更新に失敗しました: ' + (data.error || '不明なエラー'));
+        }
+    })
+    .catch(error => {
+        console.error('Chat toggle error:', error);
+        // Revert on error
+        if (isCurrentlyActive) {
+            toggle.classList.add('active');
+        } else {
+            toggle.classList.remove('active');
+        }
+        alert('チャット設定の更新に失敗しました');
+    });
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function deleteStream() {
+    if (confirm('この配信を削除しますか？この操作は元に戻せません。')) {
+        window.location.href = `{% url "streaming:delete_stream" stream.stream_id %}`;
+    }
+}
+</script>
+{% endblock %}

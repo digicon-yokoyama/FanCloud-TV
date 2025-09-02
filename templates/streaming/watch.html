@@ -1,0 +1,335 @@
+{% extends 'base/base.html' %}
+{% load humanize %}
+
+{% block title %}{{ video.title }} - StreamPlatform{% endblock %}
+
+{% block extra_css %}
+<style>
+    .video-player-container {
+        background: #000;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    
+    .video-js {
+        width: 100%;
+        height: 100%;
+    }
+    
+    .video-info {
+        background: white;
+        border-radius: 8px;
+        border: 1px solid #e5e5e5;
+    }
+    
+    .creator-info {
+        background: white;
+        border-radius: 8px;
+        border: 1px solid #e5e5e5;
+    }
+    
+    .action-buttons .btn {
+        border-radius: 20px;
+        font-weight: 500;
+    }
+    
+    .stats {
+        color: #606060;
+        font-size: 14px;
+    }
+    
+    .description {
+        background: #f9f9f9;
+        border-radius: 8px;
+        padding: 16px;
+        margin-top: 16px;
+    }
+    
+    .related-videos {
+        background: white;
+        border-radius: 8px;
+        border: 1px solid #e5e5e5;
+    }
+    
+    .related-video-item {
+        border-bottom: 1px solid #f0f0f0;
+        padding: 12px;
+        transition: background-color 0.2s;
+    }
+    
+    .related-video-item:hover {
+        background-color: #f9f9f9;
+    }
+    
+    .related-video-item:last-child {
+        border-bottom: none;
+    }
+    
+    .related-thumbnail {
+        width: 120px;
+        height: 68px;
+        object-fit: cover;
+        border-radius: 4px;
+    }
+    
+    /* Chat Styles */
+    .chat-container {
+        background: white;
+        border-radius: 8px;
+        border: 1px solid #e5e5e5;
+        overflow: hidden;
+    }
+    
+    .chat-header {
+        background: #f8f9fa;
+        border-bottom: 1px solid #e5e5e5;
+    }
+    
+    .chat-messages {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    }
+    
+    .chat-message {
+        margin-bottom: 8px;
+        padding: 6px 0;
+        word-wrap: break-word;
+        animation: slideIn 0.3s ease-out;
+    }
+    
+    .chat-message.system {
+        font-style: italic;
+        color: #666;
+        font-size: 13px;
+    }
+    
+    .chat-message.join {
+        color: #28a745;
+        font-size: 13px;
+    }
+    
+    .chat-message.leave {
+        color: #dc3545;
+        font-size: 13px;
+    }
+    
+    .message-username {
+        font-weight: 600;
+        color: #0066cc;
+        margin-right: 6px;
+        font-size: 13px;
+    }
+    
+    .message-content {
+        color: #333;
+        font-size: 14px;
+        line-height: 1.4;
+    }
+    
+    .message-timestamp {
+        font-size: 11px;
+        color: #999;
+        margin-left: 8px;
+    }
+    
+    .chat-input input:focus {
+        border-color: #0066cc;
+        box-shadow: 0 0 0 0.2rem rgba(0, 102, 204, 0.25);
+    }
+    
+    #send-chat:disabled {
+        opacity: 0.6;
+    }
+    
+    .chat-status-connecting {
+        background-color: #ffc107 !important;
+    }
+    
+    .chat-status-disconnected {
+        background-color: #dc3545 !important;
+    }
+    
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    /* Scrollbar styling for chat */
+    .chat-messages::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    .chat-messages::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 3px;
+    }
+    
+    .chat-messages::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 3px;
+    }
+    
+    .chat-messages::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Video Player -->
+        <div class="video-player-container mb-3 d-flex align-items-center justify-content-center" style="aspect-ratio: 16/9; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <div class="text-center text-white">
+                <i class="bi bi-play-circle display-1 mb-3"></i>
+                <h4>{% if video.is_live %}ライブ配信プレーヤー{% else %}動画プレーヤー{% endif %}</h4>
+                <p class="mb-0">配信エンジン実装予定</p>
+                {% if video.is_live %}
+                    <div class="mt-2">
+                        <span class="badge bg-danger">LIVE</span>
+                        <span class="ms-2">{{ video.viewer_count|default:0 }} 人が視聴中</span>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Video Info -->
+        <div class="video-info p-4">
+            <h2 class="mb-3">{{ video.title }}</h2>
+            
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div class="stats">
+                    {% if video.is_live %}
+                        <span class="badge bg-danger me-2">LIVE</span>
+                        <i class="bi bi-eye me-1"></i>{{ video.viewer_count|floatformat:0 }}人視聴中
+                        <span class="mx-2">•</span>
+                        <i class="bi bi-clock me-1"></i>{{ video.started_at|timesince }}前から配信中
+                    {% else %}
+                        <i class="bi bi-eye me-1"></i>{{ video.view_count|intcomma }}回視聴
+                        <span class="mx-2">•</span>
+                        <i class="bi bi-calendar me-1"></i>{{ video.published_at|date:"Y年m月d日" }}
+                    {% endif %}
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="btn btn-outline-dark me-2" data-bs-toggle="button">
+                        <i class="bi bi-hand-thumbs-up me-1"></i>{{ video.like_count|default:0 }}
+                    </button>
+                    <button class="btn btn-outline-dark me-2" data-bs-toggle="button">
+                        <i class="bi bi-hand-thumbs-down"></i>
+                    </button>
+                    <button class="btn btn-outline-dark me-2">
+                        <i class="bi bi-share me-1"></i>共有
+                    </button>
+                    <button class="btn btn-outline-dark">
+                        <i class="bi bi-three-dots"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Creator Info -->
+            <div class="creator-info p-3 mb-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <img src="{% if video.uploader.avatar %}{{ video.uploader.avatar.url }}{% else %}https://via.placeholder.com/48x48?text={{ video.uploader.username|first }}{% endif %}" 
+                             class="rounded-circle me-3" width="48" height="48" alt="{{ video.uploader.username }}">
+                        <div>
+                            <h6 class="mb-0">{{ video.uploader.username }}</h6>
+                            <small class="text-muted">{{ video.uploader.profile.followers_count|default:0 }}人のフォロワー</small>
+                        </div>
+                    </div>
+                    
+                    {% if user != video.uploader %}
+                        <button class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-1"></i>フォロー
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Description -->
+            {% if video.description %}
+                <div class="description">
+                    <div id="description-text" style="max-height: 80px; overflow: hidden;">
+                        {{ video.description|linebreaksbr }}
+                    </div>
+                    <button class="btn btn-link p-0 mt-2" id="description-toggle">
+                        <small>もっと見る</small>
+                    </button>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        
+        <!-- チャット機能ウィジェット (独立したテンプレートから読み込み) -->
+        {% include 'chat/chat_widget.html' %}
+        <!-- Related Videos -->
+        <div class="related-videos">
+            <div class="p-3 border-bottom">
+                <h6 class="mb-0">関連動画</h6>
+            </div>
+            
+            {% for related_video in related_videos %}
+                <div class="related-video-item">
+                    {% if related_video.is_live %}
+                        <a href="{% url 'streaming:watch' related_video.stream_id %}" class="text-decoration-none text-dark">
+                    {% else %}
+                        <div class="text-decoration-none text-dark position-relative" style="cursor: not-allowed; opacity: 0.6;" title="動画機能は準備中です">
+                    {% endif %}
+                        <div class="d-flex">
+                            <div class="position-relative me-3">
+                                <img src="{{ related_video.thumbnail_url|default:'https://via.placeholder.com/120x68?text=No+Thumbnail' }}" 
+                                     class="related-thumbnail" alt="{{ related_video.title }}">
+                                {% if related_video.is_live %}
+                                    <span class="badge bg-danger position-absolute" style="top: 4px; left: 4px; font-size: 10px;">LIVE</span>
+                                {% else %}
+                                    <span class="badge bg-dark position-absolute" style="bottom: 4px; right: 4px; font-size: 10px;">
+                                        {{ related_video.duration_formatted|default:"00:00" }}
+                                    </span>
+                                {% endif %}
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1" style="font-size: 14px; line-height: 1.3;">
+                                    {{ related_video.title|truncatechars:60 }}
+                                </h6>
+                                <div class="text-muted small">
+                                    {{ related_video.uploader.username }}
+                                </div>
+                                <div class="text-muted small">
+                                    {% if related_video.is_live %}
+                                        {{ related_video.viewer_count|floatformat:0 }}人視聴中
+                                    {% else %}
+                                        {{ related_video.view_count|intcomma }}回視聴
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% if related_video.is_live %}
+                        </a>
+                    {% else %}
+                        </div>
+                    {% endif %}
+                </div>
+            {% empty %}
+                <div class="p-3 text-center text-muted">
+                    <small>関連動画がありません</small>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Video player is not implemented yet
+    console.log('配信プレーヤーは実装予定です');
+</script>
+{% endblock %}

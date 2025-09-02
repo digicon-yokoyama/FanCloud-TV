@@ -1,0 +1,590 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}マイ配信 - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.my-streams-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 2rem 0;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    padding: 1.5rem;
+    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #6c5ce7;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    color: #2d3436;
+    font-weight: 500;
+}
+
+.stat-icon {
+    font-size: 1.5rem;
+    color: #6c5ce7;
+    margin-bottom: 1rem;
+}
+
+.streams-section {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+.filter-tabs {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+}
+
+.filter-tab {
+    background: #f1f3f4;
+    border: none;
+    border-radius: 25px;
+    padding: 0.5rem 1.5rem;
+    color: #5f6368;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.filter-tab:hover {
+    background: #e8eaed;
+    color: #3c4043;
+}
+
+.filter-tab.active {
+    background: #6c5ce7;
+    color: white;
+}
+
+.stream-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.stream-card {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #e9ecef;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.stream-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.stream-thumbnail {
+    width: 100%;
+    height: 180px;
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.stream-thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.stream-placeholder {
+    color: white;
+    font-size: 3rem;
+    opacity: 0.7;
+}
+
+.stream-status {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 15px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: white;
+    text-transform: uppercase;
+}
+
+.status-live {
+    background: #e74c3c;
+}
+
+.status-created {
+    background: #3498db;
+}
+
+.status-ended {
+    background: #95a5a6;
+}
+
+.status-error {
+    background: #e67e22;
+}
+
+.stream-duration {
+    position: absolute;
+    bottom: 0.5rem;
+    right: 0.5rem;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+}
+
+.stream-info {
+    padding: 1rem;
+}
+
+.stream-title {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #2d3436;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.stream-meta {
+    color: #636e72;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+}
+
+.stream-stats {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    font-size: 0.85rem;
+    color: #636e72;
+}
+
+.stream-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.btn-stream {
+    flex: 1;
+    min-width: 80px;
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-decoration: none;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.btn-dashboard {
+    background: #6c5ce7;
+    color: white;
+    border: 1px solid #6c5ce7;
+}
+
+.btn-dashboard:hover {
+    background: #5a4fcf;
+    color: white;
+}
+
+.btn-watch {
+    background: transparent;
+    color: #6c5ce7;
+    border: 1px solid #6c5ce7;
+}
+
+.btn-watch:hover {
+    background: #6c5ce7;
+    color: white;
+}
+
+.btn-delete {
+    background: transparent;
+    color: #e74c3c;
+    border: 1px solid #e74c3c;
+}
+
+.btn-delete:hover {
+    background: #e74c3c;
+    color: white;
+}
+
+.no-streams {
+    text-align: center;
+    padding: 3rem;
+    color: #636e72;
+}
+
+.no-streams i {
+    font-size: 4rem;
+    color: #ddd;
+    margin-bottom: 1rem;
+}
+
+.create-first-stream {
+    background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%);
+    border: none;
+    color: white;
+    padding: 1rem 2rem;
+    border-radius: 25px;
+    font-weight: 600;
+    margin-top: 1rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 25px rgba(108, 92, 231, 0.3);
+}
+
+.create-first-stream:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 35px rgba(108, 92, 231, 0.4);
+    color: white;
+}
+
+.pagination-wrapper {
+    margin-top: 2rem;
+    display: flex;
+    justify-content: center;
+}
+
+.pagination {
+    background: white;
+    border-radius: 10px;
+    padding: 0.5rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="my-streams-container">
+    <div class="container">
+        <!-- ページタイトル -->
+        <div class="text-center mb-4">
+            <h1 class="text-white mb-2">
+                <i class="fas fa-broadcast-tower me-2"></i>
+                マイ配信
+            </h1>
+            <p class="text-white-50">配信の管理と統計を確認できます</p>
+        </div>
+
+        <!-- 統計情報 -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-video"></i>
+                </div>
+                <div class="stat-number">{{ stats.total_streams }}</div>
+                <div class="stat-label">総配信数</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-circle text-danger"></i>
+                </div>
+                <div class="stat-number">{{ stats.live_streams }}</div>
+                <div class="stat-label">ライブ配信中</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-eye"></i>
+                </div>
+                <div class="stat-number">{{ stats.total_views|floatformat:0 }}</div>
+                <div class="stat-label">総視聴回数</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-number">{{ stats.avg_viewers|floatformat:0 }}</div>
+                <div class="stat-label">平均視聴者数</div>
+            </div>
+        </div>
+
+        <!-- 配信一覧 -->
+        <div class="streams-section">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3 class="mb-0">配信一覧</h3>
+                <a href="{% url 'streaming:create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>新しい配信を作成
+                </a>
+            </div>
+
+            <!-- フィルタータブ -->
+            <div class="filter-tabs">
+                <a href="{% url 'streaming:my_streams' %}" 
+                   class="filter-tab {% if not status_filter %}active{% endif %}">
+                    <i class="fas fa-list"></i>
+                    すべて
+                </a>
+                <a href="{% url 'streaming:my_streams' %}?status=live" 
+                   class="filter-tab {% if status_filter == 'live' %}active{% endif %}">
+                    <i class="fas fa-circle text-danger"></i>
+                    ライブ中
+                </a>
+                <a href="{% url 'streaming:my_streams' %}?status=created" 
+                   class="filter-tab {% if status_filter == 'created' %}active{% endif %}">
+                    <i class="fas fa-clock"></i>
+                    準備中
+                </a>
+                <a href="{% url 'streaming:my_streams' %}?status=ended" 
+                   class="filter-tab {% if status_filter == 'ended' %}active{% endif %}">
+                    <i class="fas fa-stop-circle"></i>
+                    終了済み
+                </a>
+                <a href="{% url 'streaming:my_streams' %}?status=error" 
+                   class="filter-tab {% if status_filter == 'error' %}active{% endif %}">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    エラー
+                </a>
+            </div>
+
+            {% if streams %}
+                <!-- 配信グリッド -->
+                <div class="stream-grid">
+                    {% for stream in streams %}
+                        <div class="stream-card">
+                            <div class="stream-thumbnail">
+                                {% if stream.thumbnail_url %}
+                                    <img src="{{ stream.thumbnail_url }}" alt="{{ stream.title }}">
+                                {% else %}
+                                    <i class="fas fa-video stream-placeholder"></i>
+                                {% endif %}
+                                
+                                <div class="stream-status status-{{ stream.status }}">
+                                    {{ stream.get_status_display }}
+                                </div>
+                                
+                                {% if stream.duration %}
+                                    <div class="stream-duration">
+                                        {{ stream.duration|date:"H:i:s" }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="stream-info">
+                                <h5 class="stream-title">{{ stream.title }}</h5>
+                                
+                                <div class="stream-meta">
+                                    <div>
+                                        <i class="fas fa-calendar me-1"></i>
+                                        {{ stream.created_at|date:"Y年n月j日" }}
+                                    </div>
+                                    {% if stream.category %}
+                                        <div>
+                                            <i class="fas fa-tag me-1"></i>
+                                            {{ stream.category.name }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="stream-stats">
+                                    <div>
+                                        <i class="fas fa-eye me-1"></i>
+                                        {{ stream.total_views }} 回視聴
+                                    </div>
+                                    <div>
+                                        <i class="fas fa-users me-1"></i>
+                                        最大 {{ stream.peak_viewers }} 人
+                                    </div>
+                                </div>
+                                
+                                <div class="stream-actions">
+                                    <a href="{% url 'streaming:stream_dashboard' stream.stream_id %}" 
+                                       class="btn-stream btn-dashboard">
+                                        <i class="fas fa-tachometer-alt me-1"></i>
+                                        管理
+                                    </a>
+                                    
+                                    {% if stream.status == 'live' or stream.status == 'ended' %}
+                                        <a href="{% url 'streaming:watch' stream.stream_id %}" 
+                                           class="btn-stream btn-watch" target="_blank">
+                                            <i class="fas fa-play me-1"></i>
+                                            視聴
+                                        </a>
+                                    {% endif %}
+                                    
+                                    {% if stream.status == 'ended' or stream.status == 'error' %}
+                                        <button type="button" 
+                                                class="btn-stream btn-delete" 
+                                                onclick="deleteStream('{{ stream.stream_id }}')">
+                                            <i class="fas fa-trash me-1"></i>
+                                            削除
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <!-- ページネーション -->
+                {% if streams.has_other_pages %}
+                    <div class="pagination-wrapper">
+                        <nav aria-label="配信一覧のページネーション">
+                            <ul class="pagination">
+                                {% if streams.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=1{% if status_filter %}&status={{ status_filter }}{% endif %}">
+                                            <i class="fas fa-angle-double-left"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ streams.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}">
+                                            <i class="fas fa-angle-left"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+
+                                {% for num in streams.paginator.page_range %}
+                                    {% if streams.number == num %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ num }}</span>
+                                        </li>
+                                    {% elif num > streams.number|add:'-3' and num < streams.number|add:'3' %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ num }}{% if status_filter %}&status={{ status_filter }}{% endif %}">{{ num }}</a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if streams.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ streams.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}">
+                                            <i class="fas fa-angle-right"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ streams.paginator.num_pages }}{% if status_filter %}&status={{ status_filter }}{% endif %}">
+                                            <i class="fas fa-angle-double-right"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    </div>
+                {% endif %}
+            {% else %}
+                <!-- 配信がない場合 -->
+                <div class="no-streams">
+                    <i class="fas fa-video-slash"></i>
+                    <h4>まだ配信がありません</h4>
+                    <p>最初の配信を作成して、コンテンツを共有しましょう！</p>
+                    <a href="{% url 'streaming:create' %}" class="btn create-first-stream">
+                        <i class="fas fa-rocket me-2"></i>
+                        初回配信を作成する
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- 削除確認モーダル -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                    配信削除の確認
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>この配信を削除しますか？</p>
+                <p><strong>この操作は元に戻せません。</strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    キャンセル
+                </button>
+                <form id="deleteForm" method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-1"></i>削除する
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let deleteModal;
+
+document.addEventListener('DOMContentLoaded', function() {
+    deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+});
+
+function deleteStream(streamId) {
+    // 削除フォームのactionを設定
+    const deleteForm = document.getElementById('deleteForm');
+    deleteForm.action = '{% url "streaming:delete_stream" "PLACEHOLDER" %}'.replace('PLACEHOLDER', streamId);
+    
+    // モーダル表示
+    deleteModal.show();
+}
+
+// リアルタイム統計更新（オプション）
+function updateStats() {
+    // 現在のライブ配信のステータスを更新
+    const liveStreams = document.querySelectorAll('.status-live');
+    if (liveStreams.length > 0) {
+        // ここでAJAXを使用して最新の統計情報を取得
+        // 実装は必要に応じて
+    }
+}
+
+// 5分ごとに統計を更新（ライブ配信がある場合のみ）
+if ({{ stats.live_streams }} > 0) {
+    setInterval(updateStats, 300000); // 5分
+}
+</script>
+{% endblock %}

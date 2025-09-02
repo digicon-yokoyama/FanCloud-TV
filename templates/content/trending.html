@@ -1,0 +1,270 @@
+{% extends 'base/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}トレンド - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- ヘッダー -->
+    <div class="mb-4">
+        <h2 class="mb-3">
+            <i class="bi bi-fire text-danger me-2"></i>
+            トレンド
+        </h2>
+        
+        <!-- 期間選択タブ -->
+        <ul class="nav nav-pills mb-3">
+            <li class="nav-item">
+                <a class="nav-link {% if period == 'today' %}active{% endif %}" href="?period=today">今日</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if period == 'week' %}active{% endif %}" href="?period=week">今週</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if period == 'month' %}active{% endif %}" href="?period=month">今月</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if period == 'all' %}active{% endif %}" href="?period=all">全期間</a>
+            </li>
+        </ul>
+
+        <!-- カテゴリフィルタ -->
+        <div class="d-flex flex-wrap gap-2">
+            <button class="btn btn-sm btn-outline-secondary active" data-category="all">
+                すべて
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" data-category="gaming">
+                ゲーム
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" data-category="music">
+                音楽
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" data-category="vlog">
+                Vlog
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" data-category="education">
+                教育
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" data-category="tech">
+                テクノロジー
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" data-category="entertainment">
+                エンタメ
+            </button>
+        </div>
+    </div>
+
+    <!-- トレンド動画一覧 -->
+    {% if trending_videos %}
+        <div class="row g-3">
+            {% for video in trending_videos %}
+                <div class="col-12">
+                    <div class="card shadow-sm trending-card">
+                        <div class="row g-0">
+                            <!-- ランキング番号 -->
+                            <div class="col-auto d-flex align-items-center justify-content-center px-3">
+                                <div class="ranking-number {% if forloop.counter <= 3 %}top-3{% endif %}">
+                                    {{ forloop.counter }}
+                                </div>
+                            </div>
+                            
+                            <!-- サムネイル -->
+                            <div class="col-auto">
+                                <a href="{% url 'streaming:watch' video.id %}" class="text-decoration-none">
+                                    <div class="position-relative">
+                                        <img src="{{ video.thumbnail_url }}" 
+                                             alt="{{ video.title }}"
+                                             class="trending-thumbnail"
+                                             style="width: 240px; height: 135px; object-fit: cover;">
+                                        {% if video.is_live %}
+                                            <span class="position-absolute top-0 start-0 m-2 badge bg-danger">
+                                                <i class="bi bi-circle-fill me-1"></i>LIVE
+                                            </span>
+                                        {% else %}
+                                            <span class="position-absolute bottom-0 end-0 m-2 badge bg-dark">
+                                                {{ video.duration }}
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </a>
+                            </div>
+                            
+                            <!-- 動画情報 -->
+                            <div class="col">
+                                <div class="card-body">
+                                    <h5 class="card-title mb-2">
+                                        <a href="{% url 'streaming:watch' video.id %}" class="text-decoration-none text-dark">
+                                            {{ video.title }}
+                                        </a>
+                                    </h5>
+                                    
+                                    <div class="d-flex align-items-center mb-2">
+                                        <img src="https://ui-avatars.com/api/?name={{ video.channel_name|urlencode }}&size=32&rounded=true" 
+                                             alt="{{ video.channel_name }}" 
+                                             class="rounded-circle me-2">
+                                        <div>
+                                            <div class="text-muted">{{ video.channel_name }}</div>
+                                            <small class="text-muted">
+                                                {{ video.subscriber_count|intcomma }} 登録者
+                                            </small>
+                                        </div>
+                                    </div>
+                                    
+                                    <p class="card-text text-muted mb-2">
+                                        {{ video.description|truncatewords:30 }}
+                                    </p>
+                                    
+                                    <div class="d-flex align-items-center gap-3 text-muted">
+                                        <span>
+                                            <i class="bi bi-eye me-1"></i>
+                                            {{ video.view_count|intcomma }} 回視聴
+                                        </span>
+                                        <span>
+                                            <i class="bi bi-hand-thumbs-up me-1"></i>
+                                            {{ video.like_count|intcomma }}
+                                        </span>
+                                        <span>
+                                            <i class="bi bi-clock me-1"></i>
+                                            {{ video.published_at|naturaltime }}
+                                        </span>
+                                        {% if video.category %}
+                                            <span class="badge bg-secondary">{{ video.category }}</span>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <!-- トレンド統計 -->
+                                    <div class="mt-2">
+                                        <div class="progress" style="height: 4px;">
+                                            <div class="progress-bar bg-success" 
+                                                 role="progressbar" 
+                                                 style="width: {{ video.trending_score }}%"
+                                                 aria-valuenow="{{ video.trending_score }}" 
+                                                 aria-valuemin="0" 
+                                                 aria-valuemax="100">
+                                            </div>
+                                        </div>
+                                        <small class="text-success">
+                                            <i class="bi bi-graph-up-arrow me-1"></i>
+                                            トレンドスコア: {{ video.trending_score }}%
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- もっと見るボタン -->
+        <div class="text-center mt-4">
+            <button class="btn btn-outline-primary" id="loadMoreBtn">
+                <i class="bi bi-arrow-down-circle me-2"></i>
+                もっと見る
+            </button>
+        </div>
+    {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-fire" style="font-size: 4rem; color: #ccc;"></i>
+            <h4 class="mt-3 text-muted">トレンド動画がありません</h4>
+            <p class="text-muted">人気の動画がここに表示されます</p>
+            <a href="{% url 'streaming:home' %}" class="btn btn-primary mt-3">
+                <i class="bi bi-house me-2"></i>ホームに戻る
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+.trending-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+}
+
+.trending-card:hover {
+    transform: translateX(4px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+}
+
+.ranking-number {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #666;
+    width: 60px;
+    text-align: center;
+}
+
+.ranking-number.top-3 {
+    color: #ff6b6b;
+    font-size: 2.5rem;
+}
+
+.trending-thumbnail {
+    transition: opacity 0.2s;
+}
+
+.trending-thumbnail:hover {
+    opacity: 0.9;
+}
+
+.nav-pills .nav-link {
+    color: #666;
+    border-radius: 20px;
+}
+
+.nav-pills .nav-link.active {
+    background-color: #ff0000;
+}
+
+.btn-outline-secondary.active {
+    background-color: #6c757d;
+    color: white;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.trending-card {
+    animation: slideIn 0.5s ease-out;
+    animation-fill-mode: both;
+}
+
+.trending-card:nth-child(1) { animation-delay: 0.1s; }
+.trending-card:nth-child(2) { animation-delay: 0.2s; }
+.trending-card:nth-child(3) { animation-delay: 0.3s; }
+</style>
+
+<script>
+// カテゴリフィルタ
+document.querySelectorAll('[data-category]').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('[data-category]').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        
+        const category = this.dataset.category;
+        const url = new URL(window.location);
+        if (category === 'all') {
+            url.searchParams.delete('category');
+        } else {
+            url.searchParams.set('category', category);
+        }
+        window.location.href = url.toString();
+    });
+});
+
+// もっと見る機能
+document.getElementById('loadMoreBtn')?.addEventListener('click', function() {
+    // AJAX で追加コンテンツを読み込む
+    console.log('Loading more trending videos...');
+});
+</script>
+{% endblock %}

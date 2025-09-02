@@ -1,0 +1,27 @@
+# Django Core
+Django==5.2
+djangorestframework
+psycopg2
+psycopg2-binary
+channels
+channels-redis
+redis
+python-decouple
+dj-database-url
+Pillow
+python-slugify
+pytz
+gunicorn
+sentry-sdk
+django-cors-headers
+
+# Multi-tenant support
+django-tenants
+
+# Additional packages for video streaming platform
+django-widget-tweaks
+django-crispy-forms
+python-dateutil
+boto3
+requests
+django-redis

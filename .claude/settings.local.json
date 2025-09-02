@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebSearch",
+      "WebSearch",
+      "Bash(python:*)",
+      "Bash(find:*)",
+      "Bash(docker compose:*)",
+      "Bash(docker compose logs:*)",
+      "Bash(curl:*)",
+      "Bash(docker volume rm:*)",
+      "Bash(docker-compose logs:*)",
+      "Bash(docker-compose restart:*)",
+      "Bash(docker-compose exec:*)",
+      "Read(/Users/dejikonyokoyama/Desktop/**)",
+      "Read(/Users/dejikonyokoyama/Desktop/**)",
+      "Read(/Users/dejikonyokoyama/Desktop/**)",
+      "Bash(docker-compose:*)",
+      "Read(/var/folders/rn/d61zm0pj551342190c1qzvpw0000gn/T/TemporaryItems/NSIRD_screencaptureui_V4jPyf/**)",
+      "Read(/var/folders/rn/d61zm0pj551342190c1qzvpw0000gn/T/TemporaryItems/NSIRD_screencaptureui_USulAR/**)",
+      "Read(/var/folders/rn/d61zm0pj551342190c1qzvpw0000gn/T/TemporaryItems/NSIRD_screencaptureui_Czsb02/**)",
+      "Read(/var/folders/rn/d61zm0pj551342190c1qzvpw0000gn/T/TemporaryItems/NSIRD_screencaptureui_Vwa6cn/**)",
+      "Read(/var/folders/rn/d61zm0pj551342190c1qzvpw0000gn/T/TemporaryItems/NSIRD_screencaptureui_VYMbmJ/**)",
+      "Read(/var/folders/rn/d61zm0pj551342190c1qzvpw0000gn/T/TemporaryItems/NSIRD_screencaptureui_F0scYI/**)",
+      "Bash(grep:*)",
+      "Read(/var/folders/rn/d61zm0pj551342190c1qzvpw0000gn/T/TemporaryItems/NSIRD_screencaptureui_gUViU7/**)",
+      "Read(/var/folders/rn/d61zm0pj551342190c1qzvpw0000gn/T/TemporaryItems/NSIRD_screencaptureui_GjvrJ8/**)",
+      "Read(/var/folders/rn/d61zm0pj551342190c1qzvpw0000gn/T/TemporaryItems/NSIRD_screencaptureui_iSizz8/**)",
+      "Read(/var/folders/rn/d61zm0pj551342190c1qzvpw0000gn/T/TemporaryItems/NSIRD_screencaptureui_htH3ae/**)",
+      "Read(/var/folders/rn/d61zm0pj551342190c1qzvpw0000gn/T/TemporaryItems/NSIRD_screencaptureui_HEZKpp/**)",
+      "Read(/var/folders/rn/d61zm0pj551342190c1qzvpw0000gn/T/TemporaryItems/NSIRD_screencaptureui_Pv3q3k/**)",
+      "Bash(pip3 install:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -1,0 +1,641 @@
+{% extends 'base/base.html' %}
+{% load humanize %}
+
+{% block title %}{{ video.title }} - StreamPlatform{% endblock %}
+
+{% block extra_css %}
+<style>
+    .video-player-container {
+        background: #000;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    
+    .video-js {
+        width: 100%;
+        height: 100%;
+    }
+    
+    .video-info {
+        background: white;
+        border-radius: 8px;
+        border: 1px solid #e5e5e5;
+    }
+    
+    .creator-info {
+        background: white;
+        border-radius: 8px;
+        border: 1px solid #e5e5e5;
+    }
+    
+    .action-buttons .btn {
+        border-radius: 20px;
+        font-weight: 500;
+    }
+    
+    .stats {
+        color: #606060;
+        font-size: 14px;
+    }
+    
+    .description {
+        background: #f9f9f9;
+        border-radius: 8px;
+        padding: 16px;
+        margin-top: 16px;
+    }
+    
+    .related-videos {
+        background: white;
+        border-radius: 8px;
+        border: 1px solid #e5e5e5;
+    }
+    
+    .related-video-item {
+        border-bottom: 1px solid #f0f0f0;
+        padding: 12px;
+        transition: background-color 0.2s;
+    }
+    
+    .related-video-item:hover {
+        background-color: #f9f9f9;
+    }
+    
+    .related-video-item:last-child {
+        border-bottom: none;
+    }
+    
+    .related-thumbnail {
+        width: 120px;
+        height: 68px;
+        object-fit: cover;
+        border-radius: 4px;
+    }
+    
+    /* Chat Styles */
+    .chat-container {
+        background: white;
+        border-radius: 8px;
+        border: 1px solid #e5e5e5;
+        overflow: hidden;
+    }
+    
+    .chat-header {
+        background: #f8f9fa;
+        border-bottom: 1px solid #e5e5e5;
+    }
+    
+    .chat-messages {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    }
+    
+    .chat-message {
+        margin-bottom: 8px;
+        padding: 6px 0;
+        word-wrap: break-word;
+        animation: slideIn 0.3s ease-out;
+    }
+    
+    .chat-message.system {
+        font-style: italic;
+        color: #666;
+        font-size: 13px;
+    }
+    
+    .chat-message.join {
+        color: #28a745;
+        font-size: 13px;
+    }
+    
+    .chat-message.leave {
+        color: #dc3545;
+        font-size: 13px;
+    }
+    
+    .message-username {
+        font-weight: 600;
+        color: #0066cc;
+        margin-right: 6px;
+        font-size: 13px;
+    }
+    
+    .message-content {
+        color: #333;
+        font-size: 14px;
+        line-height: 1.4;
+    }
+    
+    .message-timestamp {
+        font-size: 11px;
+        color: #999;
+        margin-left: 8px;
+    }
+    
+    .chat-input input:focus {
+        border-color: #0066cc;
+        box-shadow: 0 0 0 0.2rem rgba(0, 102, 204, 0.25);
+    }
+    
+    #send-chat:disabled {
+        opacity: 0.6;
+    }
+    
+    .chat-status-connecting {
+        background-color: #ffc107 !important;
+    }
+    
+    .chat-status-disconnected {
+        background-color: #dc3545 !important;
+    }
+    
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    /* Scrollbar styling for chat */
+    .chat-messages::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    .chat-messages::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 3px;
+    }
+    
+    .chat-messages::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 3px;
+    }
+    
+    .chat-messages::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Video Player -->
+        <div class="video-player-container mb-3 d-flex align-items-center justify-content-center" style="aspect-ratio: 16/9; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <div class="text-center text-white">
+                <i class="bi bi-play-circle display-1 mb-3"></i>
+                <h4>{% if video.is_live %}ライブ配信プレーヤー{% else %}動画プレーヤー{% endif %}</h4>
+                <p class="mb-0">配信エンジン実装予定</p>
+                {% if video.is_live %}
+                    <div class="mt-2">
+                        <span class="badge bg-danger">LIVE</span>
+                        <span class="ms-2">{{ video.viewer_count|default:0 }} 人が視聴中</span>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Video Info -->
+        <div class="video-info p-4">
+            <h2 class="mb-3">{{ video.title }}</h2>
+            
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div class="stats">
+                    {% if video.is_live %}
+                        <span class="badge bg-danger me-2">LIVE</span>
+                        <i class="bi bi-eye me-1"></i>{{ video.viewer_count|floatformat:0 }}人視聴中
+                        <span class="mx-2">•</span>
+                        <i class="bi bi-clock me-1"></i>{{ video.started_at|timesince }}前から配信中
+                    {% else %}
+                        <i class="bi bi-eye me-1"></i>{{ video.view_count|intcomma }}回視聴
+                        <span class="mx-2">•</span>
+                        <i class="bi bi-calendar me-1"></i>{{ video.published_at|date:"Y年m月d日" }}
+                    {% endif %}
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="btn btn-outline-dark me-2" data-bs-toggle="button">
+                        <i class="bi bi-hand-thumbs-up me-1"></i>{{ video.like_count|default:0 }}
+                    </button>
+                    <button class="btn btn-outline-dark me-2" data-bs-toggle="button">
+                        <i class="bi bi-hand-thumbs-down"></i>
+                    </button>
+                    <button class="btn btn-outline-dark me-2">
+                        <i class="bi bi-share me-1"></i>共有
+                    </button>
+                    <button class="btn btn-outline-dark">
+                        <i class="bi bi-three-dots"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Creator Info -->
+            <div class="creator-info p-3 mb-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <img src="{% if video.uploader.avatar %}{{ video.uploader.avatar.url }}{% else %}https://via.placeholder.com/48x48?text={{ video.uploader.username|first }}{% endif %}" 
+                             class="rounded-circle me-3" width="48" height="48" alt="{{ video.uploader.username }}">
+                        <div>
+                            <h6 class="mb-0">{{ video.uploader.username }}</h6>
+                            <small class="text-muted">{{ video.uploader.profile.followers_count|default:0 }}人のフォロワー</small>
+                        </div>
+                    </div>
+                    
+                    {% if user != video.uploader %}
+                        <button class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-1"></i>フォロー
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Description -->
+            {% if video.description %}
+                <div class="description">
+                    <div id="description-text" style="max-height: 80px; overflow: hidden;">
+                        {{ video.description|linebreaksbr }}
+                    </div>
+                    <button class="btn btn-link p-0 mt-2" id="description-toggle">
+                        <small>もっと見る</small>
+                    </button>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <!-- デバッグ: ストリーム情報を表示 -->
+        <div class="debug-stream-info p-3 mb-3 bg-warning">
+            <h6>デバッグ: ストリーム情報</h6>
+            <p><strong>Stream ID:</strong> {{ video.stream_id }}</p>
+            <p><strong>Status:</strong> {{ video.status }}</p>
+            <p><strong>Is Live:</strong> {{ video.is_live|yesno:"Yes,No" }}</p>
+            <p><strong>Enable Chat:</strong> {{ video.enable_chat|yesno:"Yes,No" }}</p>
+            <p><strong>🔍 USER DEBUG:</strong> user={{ user|default:"None" }} | authenticated={{ user.is_authenticated|default:"N/A" }}</p>
+            {% if video.is_live and video.enable_chat %}
+                <p><strong>条件チェック:</strong> チャット表示</p>
+            {% else %}
+                <p><strong>条件チェック:</strong> チャット非表示</p>
+            {% endif %}
+        </div>
+        
+        <!-- チャット機能ウィジェット (独立したテンプレートから読み込み) -->
+        {% include 'chat/chat_widget.html' %}
+                <div class="chat-header p-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">
+                        <i class="bi bi-chat-dots me-2"></i>ライブチャット
+                    </h6>
+                    {% if user.is_authenticated and video.uploader == user or perms.can_manage_content %}
+                        <div class="d-flex align-items-center">
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-gear"></i>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="#" id="toggle-timestamps">タイムスタンプ表示</a></li>
+                                    <li><a class="dropdown-item" href="#" id="clear-chat">チャットをクリア</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="chat-messages" id="chat-messages" style="height: 400px; overflow-y: auto; padding: 12px; background-color: #fafafa;">
+                    <!-- Chat messages will appear here -->
+                </div>
+                
+                <!-- 🚨 テストマーカー1 -->
+                <div style="background: yellow; padding: 5px; font-weight: bold;">🟡 MARKER 1: chat-messages後の位置</div>
+                
+                <div class="chat-input-area" style="padding: 10px; border-top: 1px solid #ddd; background: #f9f9f9;">
+                    <!-- 🚨 テストマーカー2 -->
+                    <div style="background: lime; padding: 3px;">🟢 MARKER 2: chat-input-area内</div>
+                    
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="chat-input" placeholder="メッセージを入力..." maxlength="500">
+                        <button class="btn btn-primary" type="button" id="send-chat" disabled>
+                            <i class="bi bi-send"></i>
+                        </button>
+                    </div>
+                    <small class="text-muted">Enter で送信 • 最大500文字</small>
+                </div>
+                
+                <!-- 🚨 テストマーカー3 -->
+                <div style="background: red; color: white; padding: 5px;">🔴 MARKER 3: 全チャット部分終了</div>
+            </div>
+        {% endif %}
+        
+        <!-- Related Videos -->
+        <div class="related-videos">
+            <div class="p-3 border-bottom">
+                <h6 class="mb-0">関連動画</h6>
+            </div>
+            
+            {% for related_video in related_videos %}
+                <div class="related-video-item">
+                    {% if related_video.is_live %}
+                        <a href="{% url 'streaming:watch' related_video.stream_id %}" class="text-decoration-none text-dark">
+                    {% else %}
+                        <div class="text-decoration-none text-dark position-relative" style="cursor: not-allowed; opacity: 0.6;" title="動画機能は準備中です">
+                    {% endif %}
+                        <div class="d-flex">
+                            <div class="position-relative me-3">
+                                <img src="{{ related_video.thumbnail_url|default:'https://via.placeholder.com/120x68?text=No+Thumbnail' }}" 
+                                     class="related-thumbnail" alt="{{ related_video.title }}">
+                                {% if related_video.is_live %}
+                                    <span class="badge bg-danger position-absolute" style="top: 4px; left: 4px; font-size: 10px;">LIVE</span>
+                                {% else %}
+                                    <span class="badge bg-dark position-absolute" style="bottom: 4px; right: 4px; font-size: 10px;">
+                                        {{ related_video.duration_formatted|default:"00:00" }}
+                                    </span>
+                                {% endif %}
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1" style="font-size: 14px; line-height: 1.3;">
+                                    {{ related_video.title|truncatechars:60 }}
+                                </h6>
+                                <div class="text-muted small">
+                                    {{ related_video.uploader.username }}
+                                </div>
+                                <div class="text-muted small">
+                                    {% if related_video.is_live %}
+                                        {{ related_video.viewer_count|floatformat:0 }}人視聴中
+                                    {% else %}
+                                        {{ related_video.view_count|intcomma }}回視聴
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% if related_video.is_live %}
+                        </a>
+                    {% else %}
+                        </div>
+                    {% endif %}
+                </div>
+            {% empty %}
+                <div class="p-3 text-center text-muted">
+                    <small>関連動画がありません</small>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Video player is not implemented yet
+    console.log('配信プレーヤーは実装予定です');
+    
+    // Description toggle
+    document.getElementById('description-toggle')?.addEventListener('click', function() {
+        const descText = document.getElementById('description-text');
+        if (descText.style.maxHeight === 'none') {
+            descText.style.maxHeight = '80px';
+            this.innerHTML = '<small>もっと見る</small>';
+        } else {
+            descText.style.maxHeight = 'none';
+            this.innerHTML = '<small>閉じる</small>';
+        }
+    });
+    
+    {% if video.is_live and video.enable_chat %}
+        // Chat functionality
+        let chatSocket = null;
+        let showTimestamps = false;
+        let isConnecting = false;
+        
+        const chatMessages = document.getElementById('chat-messages');
+        const chatInput = document.getElementById('chat-input');
+        const sendButton = document.getElementById('send-chat');
+        const chatStatus = document.getElementById('chat-status');
+        
+        {% if user.is_authenticated %}
+            // Initialize chat connection
+            function initChat() {
+                if (isConnecting || (chatSocket && chatSocket.readyState === WebSocket.OPEN)) {
+                    return;
+                }
+                
+                isConnecting = true;
+                
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                chatSocket = new WebSocket(
+                    protocol + '//' + window.location.host + '/ws/chat/{{ video.stream_id }}/'
+                );
+                console.log('DEBUG: WebSocket connecting to:', protocol + '//' + window.location.host + '/ws/chat/{{ video.stream_id }}/');
+                
+                chatSocket.onopen = function(e) {
+                    console.log('Chat connected');
+                    isConnecting = false;
+                    enableChatInput(true);
+                    loadChatHistory();
+                };
+                
+                chatSocket.onmessage = function(e) {
+                    const data = JSON.parse(e.data);
+                    
+                    if (data.error) {
+                        showChatError(data.error);
+                        return;
+                    }
+                    
+                    addChatMessage(data);
+                };
+                
+                chatSocket.onclose = function(e) {
+                    console.log('Chat disconnected:', e.code);
+                    isConnecting = false;
+                    enableChatInput(false);
+                    
+                    // Attempt reconnection after 3 seconds
+                    setTimeout(() => {
+                        if (document.visibilityState === 'visible') {
+                            initChat();
+                        }
+                    }, 3000);
+                };
+                
+                chatSocket.onerror = function(e) {
+                    console.error('Chat error:', e);
+                    isConnecting = false;
+                };
+            }
+            
+            
+            function enableChatInput(enabled) {
+                if (chatInput) {
+                    chatInput.disabled = !enabled;
+                    sendButton.disabled = !enabled || chatInput.value.trim().length === 0;
+                }
+            }
+            
+            
+            function addChatMessage(data) {
+                const messageElement = document.createElement('div');
+                messageElement.className = `chat-message ${data.message_type || 'message'}`;
+                
+                const timestamp = showTimestamps ? 
+                    `<span class="message-timestamp">${new Date().toLocaleTimeString('ja-JP', {hour12: false})}</span>` : '';
+                
+                let messageHtml = '';
+                
+                if (data.message_type === 'join' || data.message_type === 'leave' || data.message_type === 'system') {
+                    messageHtml = `<span class="message-content">${escapeHtml(data.message)}</span>${timestamp}`;
+                } else {
+                    messageHtml = `
+                        <span class="message-username">${escapeHtml(data.username)}:</span>
+                        <span class="message-content">${escapeHtml(data.message)}</span>
+                        ${timestamp}
+                    `;
+                }
+                
+                messageElement.innerHTML = messageHtml;
+                chatMessages.appendChild(messageElement);
+                
+                // Auto-scroll to bottom
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                
+                // Limit message history (keep last 100 messages)
+                const messages = chatMessages.querySelectorAll('.chat-message');
+                if (messages.length > 100) {
+                    messages[0].remove();
+                }
+            }
+            
+            function sendMessage() {
+                console.log('DEBUG: sendMessage() called');
+                console.log('DEBUG: chatSocket state:', chatSocket ? chatSocket.readyState : 'null');
+                console.log('DEBUG: WebSocket.OPEN constant:', WebSocket.OPEN);
+                
+                if (!chatSocket || chatSocket.readyState !== WebSocket.OPEN) {
+                    console.log('DEBUG: WebSocket not ready, showing error');
+                    showChatError('チャットに接続されていません');
+                    return;
+                }
+                
+                const message = chatInput.value.trim();
+                console.log('DEBUG: Message to send:', message);
+                
+                if (!message || message.length > 500) {
+                    console.log('DEBUG: Invalid message length or empty');
+                    return;
+                }
+                
+                console.log('DEBUG: Sending message via WebSocket');
+                chatSocket.send(JSON.stringify({
+                    'message': message
+                }));
+                
+                chatInput.value = '';
+                sendButton.disabled = true;
+                console.log('DEBUG: Message sent, input cleared');
+            }
+            
+            function showChatError(error) {
+                const errorElement = document.createElement('div');
+                errorElement.className = 'chat-message system';
+                errorElement.innerHTML = `<span class="message-content text-danger">エラー: ${escapeHtml(error)}</span>`;
+                chatMessages.appendChild(errorElement);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+            
+            function loadChatHistory() {
+                fetch(`/api/chat/history/{{ video.stream_id }}/`, {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken')
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.messages) {
+                        data.messages.forEach(message => {
+                            addChatMessage({
+                                username: message.username,
+                                message: message.message,
+                                message_type: message.message_type,
+                                timestamp: message.timestamp
+                            });
+                        });
+                        
+                        if (data.messages.length > 0) {
+                            chatMessages.scrollTop = chatMessages.scrollHeight;
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.log('Failed to load chat history:', error);
+                });
+            }
+            
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+            
+            // Event listeners
+            if (sendButton) {
+                sendButton.addEventListener('click', sendMessage);
+            }
+            
+            if (chatInput) {
+                chatInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        sendMessage();
+                    }
+                });
+                
+                chatInput.addEventListener('input', function() {
+                    sendButton.disabled = this.value.trim().length === 0 || !chatSocket || chatSocket.readyState !== WebSocket.OPEN;
+                });
+            }
+            
+            // Chat controls
+            document.getElementById('toggle-timestamps')?.addEventListener('click', function(e) {
+                e.preventDefault();
+                showTimestamps = !showTimestamps;
+                this.textContent = showTimestamps ? 'タイムスタンプを隠す' : 'タイムスタンプ表示';
+            });
+            
+            document.getElementById('clear-chat')?.addEventListener('click', function(e) {
+                e.preventDefault();
+                const messages = chatMessages.querySelectorAll('.chat-message');
+                messages.forEach(msg => msg.remove());
+            });
+            
+            // Initialize chat when page loads
+            initChat();
+            
+            // Reconnect when page becomes visible (tab switching)
+            document.addEventListener('visibilitychange', function() {
+                if (document.visibilityState === 'visible' && (!chatSocket || chatSocket.readyState === WebSocket.CLOSED)) {
+                    initChat();
+                }
+            });
+        {% endif %}
+        
+        // Helper function to escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    {% endif %}
+</script>
+{% endblock %}

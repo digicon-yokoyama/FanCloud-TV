@@ -1,0 +1,292 @@
+{% extends 'base/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}プロフィール - {{ user.username }} - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <!-- プロフィール情報 -->
+        <div class="col-md-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-body text-center">
+                    <div class="position-relative d-inline-block mb-3">
+                        <img src="https://ui-avatars.com/api/?name={{ user.username|urlencode }}&size=150&rounded=true" 
+                             alt="{{ user.username }}" 
+                             class="rounded-circle"
+                             style="width: 150px; height: 150px;">
+                        <button class="btn btn-sm btn-light position-absolute bottom-0 end-0 rounded-circle" 
+                                style="width: 40px; height: 40px;">
+                            <i class="bi bi-camera"></i>
+                        </button>
+                    </div>
+                    
+                    <h4 class="mb-1">{{ user.first_name }} {{ user.last_name }}{% if not user.first_name and not user.last_name %}{{ user.username }}{% endif %}</h4>
+                    <p class="text-muted">@{{ user.username }}</p>
+                    
+                    {% if profile.bio %}
+                        <p class="mb-3">{{ profile.bio }}</p>
+                    {% endif %}
+                    
+                    <div class="d-flex justify-content-around mb-3">
+                        <div>
+                            <h5 class="mb-0">{{ profile.subscriber_count|default:0|intcomma }}</h5>
+                            <small class="text-muted">登録者</small>
+                        </div>
+                        <div>
+                            <h5 class="mb-0">{{ profile.video_count|default:0 }}</h5>
+                            <small class="text-muted">動画</small>
+                        </div>
+                        <div>
+                            <h5 class="mb-0">{{ profile.total_views|default:0|intcomma }}</h5>
+                            <small class="text-muted">総視聴回数</small>
+                        </div>
+                    </div>
+                    
+                    {% if user == request.user %}
+                        <button class="btn btn-outline-primary w-100" data-bs-toggle="modal" data-bs-target="#editProfileModal">
+                            <i class="bi bi-pencil me-2"></i>プロフィール編集
+                        </button>
+                    {% else %}
+                        <button class="btn btn-primary w-100">
+                            <i class="bi bi-person-plus me-2"></i>登録する
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- 配信者設定（自分のプロフィールの場合のみ） -->
+            {% if user == request.user and user.can_stream %}
+                <div class="card shadow-sm">
+                    <div class="card-header">
+                        <h6 class="mb-0">配信者設定</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label small">配信キー</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" value="{{ profile.stream_key|default:'未設定' }}" readonly id="streamKey">
+                                <button class="btn btn-outline-secondary" type="button" id="toggleStreamKey">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <a href="{% url 'streaming:create' %}" class="btn btn-success w-100">
+                            <i class="bi bi-broadcast me-2"></i>配信開始
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- コンテンツタブ -->
+        <div class="col-md-8">
+            <ul class="nav nav-tabs mb-3" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#videos" type="button">
+                        <i class="bi bi-play-circle me-1"></i>動画
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#playlists" type="button">
+                        <i class="bi bi-collection-play me-1"></i>プレイリスト
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#about" type="button">
+                        <i class="bi bi-info-circle me-1"></i>概要
+                    </button>
+                </li>
+                {% if user == request.user %}
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#analytics" type="button">
+                            <i class="bi bi-graph-up me-1"></i>分析
+                        </button>
+                    </li>
+                {% endif %}
+            </ul>
+            
+            <div class="tab-content">
+                <!-- 動画タブ -->
+                <div class="tab-pane fade show active" id="videos" role="tabpanel">
+                    <div class="row g-3">
+                        {% for video in user_videos %}
+                            <div class="col-lg-4 col-md-6">
+                                {% include 'partials/video_card.html' with video=video %}
+                            </div>
+                        {% empty %}
+                            <div class="text-center py-5">
+                                <i class="bi bi-film" style="font-size: 3rem; color: #ccc;"></i>
+                                <p class="mt-3 text-muted">まだ動画がありません</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- プレイリストタブ -->
+                <div class="tab-pane fade" id="playlists" role="tabpanel">
+                    <div class="row g-3">
+                        {% for playlist in user_playlists %}
+                            <div class="col-lg-6">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-title">{{ playlist.title }}</h6>
+                                        <p class="text-muted">{{ playlist.video_count }} 本の動画</p>
+                                    </div>
+                                </div>
+                            </div>
+                        {% empty %}
+                            <div class="text-center py-5">
+                                <i class="bi bi-collection" style="font-size: 3rem; color: #ccc;"></i>
+                                <p class="mt-3 text-muted">プレイリストがありません</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- 概要タブ -->
+                <div class="tab-pane fade" id="about" role="tabpanel">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">チャンネル詳細</h5>
+                            <dl class="row">
+                                <dt class="col-sm-3">登録日</dt>
+                                <dd class="col-sm-9">{{ user.date_joined|date:"Y年m月d日" }}</dd>
+                                
+                                <dt class="col-sm-3">総視聴回数</dt>
+                                <dd class="col-sm-9">{{ profile.total_views|default:0|intcomma }} 回</dd>
+                                
+                                <dt class="col-sm-3">リンク</dt>
+                                <dd class="col-sm-9">
+                                    {% if profile.website %}
+                                        <a href="{{ profile.website }}" target="_blank" rel="noopener noreferrer">
+                                            <i class="bi bi-globe me-1"></i>ウェブサイト
+                                        </a>
+                                    {% endif %}
+                                    {% if profile.twitter %}
+                                        <a href="https://x.com/{{ profile.twitter }}" target="_blank" rel="noopener noreferrer" class="ms-3">
+                                            <i class="bi bi-twitter-x me-1"></i>X (Twitter)
+                                        </a>
+                                    {% endif %}
+                                    {% if profile.youtube %}
+                                        <a href="https://youtube.com/c/{{ profile.youtube }}" target="_blank" rel="noopener noreferrer" class="ms-3">
+                                            <i class="bi bi-youtube me-1"></i>YouTube
+                                        </a>
+                                    {% endif %}
+                                </dd>
+                            </dl>
+                            
+                            {% if profile.bio %}
+                                <h6 class="mt-4">説明</h6>
+                                <p>{{ profile.bio|linebreaks }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 分析タブ（自分のプロフィールの場合のみ） -->
+                {% if user == request.user %}
+                    <div class="tab-pane fade" id="analytics" role="tabpanel">
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title">チャンネル分析</h5>
+                                <canvas id="viewsChart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <div class="card text-center">
+                                    <div class="card-body">
+                                        <h3 class="text-primary">{{ analytics.views_today|default:0|intcomma }}</h3>
+                                        <p class="text-muted mb-0">今日の視聴回数</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card text-center">
+                                    <div class="card-body">
+                                        <h3 class="text-success">{{ analytics.new_subscribers|default:0|intcomma }}</h3>
+                                        <p class="text-muted mb-0">新規登録者（今週）</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card text-center">
+                                    <div class="card-body">
+                                        <h3 class="text-info">{{ analytics.avg_watch_time|default:"0:00" }}</h3>
+                                        <p class="text-muted mb-0">平均視聴時間</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- プロフィール編集モーダル -->
+{% if user == request.user %}
+<div class="modal fade" id="editProfileModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">プロフィール編集</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'accounts:profile' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">姓</label>
+                        <input type="text" class="form-control" name="first_name" value="{{ user.first_name|default:'' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">名</label>
+                        <input type="text" class="form-control" name="last_name" value="{{ user.last_name|default:'' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">自己紹介</label>
+                        <textarea class="form-control" name="bio" rows="3">{{ profile.bio|default:'' }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">ウェブサイト</label>
+                        <input type="url" class="form-control" name="website" value="{{ profile.website|default:'' }}">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script>
+// 配信キーの表示/非表示
+document.getElementById('toggleStreamKey')?.addEventListener('click', function() {
+    const input = document.getElementById('streamKey');
+    const icon = this.querySelector('i');
+    
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('bi-eye');
+        icon.classList.add('bi-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('bi-eye-slash');
+        icon.classList.add('bi-eye');
+    }
+});
+
+// 分析チャート（Chart.js使用の例）
+{% if user == request.user %}
+// ここにChart.jsを使った分析グラフのコードを追加
+{% endif %}
+</script>
+{% endblock %}

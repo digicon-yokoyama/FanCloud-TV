@@ -1,0 +1,430 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}アカウント設定 - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <!-- サイドバー -->
+        <div class="col-lg-3 col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">アカウント設定</h6>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="#basic" class="list-group-item list-group-item-action active" data-bs-toggle="tab">
+                        <i class="bi bi-person me-2"></i>基本情報
+                    </a>
+                    <a href="#profile" class="list-group-item list-group-item-action" data-bs-toggle="tab">
+                        <i class="bi bi-card-text me-2"></i>プロフィール
+                    </a>
+                    <a href="#streaming" class="list-group-item list-group-item-action" data-bs-toggle="tab">
+                        <i class="bi bi-broadcast me-2"></i>配信設定
+                    </a>
+                    <a href="#privacy" class="list-group-item list-group-item-action" data-bs-toggle="tab">
+                        <i class="bi bi-shield-check me-2"></i>プライバシー
+                    </a>
+                    <a href="#password" class="list-group-item list-group-item-action" data-bs-toggle="tab">
+                        <i class="bi bi-key me-2"></i>パスワード変更
+                    </a>
+                    <a href="#danger" class="list-group-item list-group-item-action text-danger" data-bs-toggle="tab">
+                        <i class="bi bi-exclamation-triangle me-2"></i>アカウント削除
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- メインコンテンツ -->
+        <div class="col-lg-9 col-md-8">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="tab-content">
+                <!-- 基本情報タブ -->
+                <div class="tab-pane fade show active" id="basic">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">基本情報</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" enctype="multipart/form-data">
+                                {% csrf_token %}
+                                <input type="hidden" name="tab" value="basic">
+                                
+                                <!-- アバター設定 -->
+                                <div class="row mb-4">
+                                    <div class="col-auto">
+                                        <img src="https://ui-avatars.com/api/?name={{ user.username|urlencode }}&size=80&rounded=true" 
+                                             alt="プロフィール画像" 
+                                             class="rounded-circle"
+                                             id="avatarPreview"
+                                             style="width: 80px; height: 80px;">
+                                    </div>
+                                    <div class="col">
+                                        <label for="avatar" class="form-label">プロフィール画像</label>
+                                        <input type="file" class="form-control" id="avatar" name="avatar" accept="image/*">
+                                        <small class="text-muted">JPG, PNG形式、最大5MBまで</small>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="username" class="form-label">ユーザー名</label>
+                                        <input type="text" class="form-control" id="username" name="username" value="{{ user.username }}" readonly>
+                                        <small class="text-muted">ユーザー名は変更できません</small>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="email" class="form-label">メールアドレス</label>
+                                        <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}">
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="first_name" class="form-label">名前</label>
+                                        <input type="text" class="form-control" id="first_name" name="first_name" value="{{ user.first_name }}">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="last_name" class="form-label">姓</label>
+                                        <input type="text" class="form-control" id="last_name" name="last_name" value="{{ user.last_name }}">
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-lg me-2"></i>保存
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- プロフィールタブ -->
+                <div class="tab-pane fade" id="profile">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">プロフィール設定</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="tab" value="profile">
+
+                                <div class="mb-3">
+                                    <label for="display_name" class="form-label">表示名</label>
+                                    <input type="text" class="form-control" id="display_name" name="display_name" 
+                                           value="{{ profile.display_name|default:user.get_full_name|default:user.username }}">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="bio" class="form-label">自己紹介</label>
+                                    <textarea class="form-control" id="bio" name="bio" rows="4" maxlength="500">{{ profile.bio|default:'' }}</textarea>
+                                    <small class="text-muted">500文字以内</small>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="location" class="form-label">所在地</label>
+                                        <input type="text" class="form-control" id="location" name="location" value="{{ profile.location|default:'' }}">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="website" class="form-label">ウェブサイト</label>
+                                        <input type="url" class="form-control" id="website" name="website" value="{{ profile.website|default:'' }}">
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="twitter" class="form-label">X (Twitter)</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">@</span>
+                                            <input type="text" class="form-control" id="twitter" name="twitter" value="{{ profile.twitter|default:'' }}">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="youtube" class="form-label">YouTube</label>
+                                        <input type="text" class="form-control" id="youtube" name="youtube" value="{{ profile.youtube|default:'' }}">
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-lg me-2"></i>保存
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 配信設定タブ -->
+                <div class="tab-pane fade" id="streaming">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">配信設定</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="tab" value="streaming">
+
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="can_stream" name="can_stream" 
+                                               {% if user.can_stream %}checked{% endif %}>
+                                        <label class="form-check-label" for="can_stream">
+                                            配信機能を有効にする
+                                        </label>
+                                    </div>
+                                    <small class="text-muted">配信を行う場合はチェックしてください</small>
+                                </div>
+
+                                {% if user.can_stream %}
+                                <div class="mb-3">
+                                    <label for="stream_key" class="form-label">配信キー</label>
+                                    <div class="input-group">
+                                        <input type="password" class="form-control" id="stream_key" value="{{ user.stream_key|default:'未設定' }}" readonly>
+                                        <button class="btn btn-outline-secondary" type="button" id="toggleStreamKey">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                        <button class="btn btn-outline-primary" type="button" id="regenerateKey">
+                                            <i class="bi bi-arrow-clockwise"></i> 再生成
+                                        </button>
+                                    </div>
+                                    <small class="text-muted">配信ソフトで使用するキーです。他の人に教えないでください。</small>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="default_title" class="form-label">デフォルト配信タイトル</label>
+                                    <input type="text" class="form-control" id="default_title" name="default_title" 
+                                           value="{{ profile.default_stream_title|default:'' }}">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="default_category" class="form-label">デフォルトカテゴリ</label>
+                                    <select class="form-select" id="default_category" name="default_category">
+                                        <option value="">選択してください</option>
+                                        <option value="gaming">ゲーム</option>
+                                        <option value="music">音楽</option>
+                                        <option value="vlog">Vlog</option>
+                                        <option value="education">教育</option>
+                                        <option value="tech">テクノロジー</option>
+                                        <option value="entertainment">エンタメ</option>
+                                    </select>
+                                </div>
+                                {% endif %}
+
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-lg me-2"></i>保存
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- プライバシータブ -->
+                <div class="tab-pane fade" id="privacy">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">プライバシー設定</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="tab" value="privacy">
+
+                                <div class="mb-3">
+                                    <label class="form-label">プロフィール公開設定</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="profile_visibility" id="public" value="public" checked>
+                                        <label class="form-check-label" for="public">
+                                            公開（誰でも見ることができます）
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="profile_visibility" id="private" value="private">
+                                        <label class="form-check-label" for="private">
+                                            非公開（フォロワーのみ）
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="show_follower_count" name="show_follower_count" checked>
+                                        <label class="form-check-label" for="show_follower_count">
+                                            フォロワー数を表示する
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="allow_messages" name="allow_messages" checked>
+                                        <label class="form-check-label" for="allow_messages">
+                                            ダイレクトメッセージを受信する
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-lg me-2"></i>保存
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- パスワード変更タブ -->
+                <div class="tab-pane fade" id="password">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">パスワード変更</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="tab" value="password">
+
+                                <div class="mb-3">
+                                    <label for="current_password" class="form-label">現在のパスワード</label>
+                                    <input type="password" class="form-control" id="current_password" name="current_password" required>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="new_password1" class="form-label">新しいパスワード</label>
+                                    <input type="password" class="form-control" id="new_password1" name="new_password1" required>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="new_password2" class="form-label">新しいパスワード（確認）</label>
+                                    <input type="password" class="form-control" id="new_password2" name="new_password2" required>
+                                </div>
+
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="bi bi-key me-2"></i>パスワードを変更
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- アカウント削除タブ -->
+                <div class="tab-pane fade" id="danger">
+                    <div class="card border-danger">
+                        <div class="card-header bg-danger text-white">
+                            <h5 class="mb-0">危険な操作</h5>
+                        </div>
+                        <div class="card-body">
+                            <h6 class="text-danger">アカウント削除</h6>
+                            <p class="text-muted">アカウントを削除すると、すべてのデータが永久に失われます。この操作は取り消せません。</p>
+                            
+                            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
+                                <i class="bi bi-trash me-2"></i>アカウントを削除
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- アカウント削除確認モーダル -->
+<div class="modal fade" id="deleteAccountModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-danger">アカウント削除の確認</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p><strong>本当にアカウントを削除しますか？</strong></p>
+                <p class="text-muted">この操作は取り消せません。以下のデータがすべて削除されます：</p>
+                <ul class="text-muted">
+                    <li>プロフィール情報</li>
+                    <li>配信履歴</li>
+                    <li>フォロー・フォロワー情報</li>
+                    <li>コメント・いいね履歴</li>
+                </ul>
+                <div class="mb-3">
+                    <label for="deleteConfirm" class="form-label">削除を確認するために「{{ user.username }}」と入力してください：</label>
+                    <input type="text" class="form-control" id="deleteConfirm">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <form method="post" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="tab" value="delete">
+                    <button type="submit" class="btn btn-danger" id="confirmDeleteBtn" disabled>
+                        アカウントを削除
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.tab-content .card {
+    border: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.list-group-item-action:hover {
+    background-color: #f8f9fa;
+}
+
+.list-group-item.active {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+</style>
+
+<script>
+// アバタープレビュー
+document.getElementById('avatar')?.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('avatarPreview').src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
+// 配信キー表示切り替え
+document.getElementById('toggleStreamKey')?.addEventListener('click', function() {
+    const input = document.getElementById('stream_key');
+    const icon = this.querySelector('i');
+    
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('bi-eye');
+        icon.classList.add('bi-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('bi-eye-slash');
+        icon.classList.add('bi-eye');
+    }
+});
+
+// アカウント削除確認
+document.getElementById('deleteConfirm')?.addEventListener('input', function() {
+    const username = '{{ user.username }}';
+    const confirmBtn = document.getElementById('confirmDeleteBtn');
+    
+    if (this.value === username) {
+        confirmBtn.disabled = false;
+    } else {
+        confirmBtn.disabled = true;
+    }
+});
+</script>
+{% endblock %}

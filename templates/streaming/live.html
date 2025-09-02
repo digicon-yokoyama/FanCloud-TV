@@ -1,0 +1,163 @@
+{% extends 'base/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}ライブ配信中 - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- ヘッダー -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">
+            <i class="bi bi-broadcast text-danger me-2"></i>
+            ライブ配信中
+        </h2>
+        <div class="d-flex gap-2">
+            <select class="form-select" id="sortSelect">
+                <option value="viewers">視聴者数順</option>
+                <option value="recent">配信開始順</option>
+                <option value="category">カテゴリ順</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- ライブ配信一覧 -->
+    {% if streams %}
+        <div class="row g-3">
+            {% for stream in streams %}
+                <div class="col-lg-3 col-md-4 col-sm-6">
+                    <div class="card h-100 shadow-sm stream-card">
+                        <a href="{% url 'streaming:watch' stream.stream_id %}" class="text-decoration-none">
+                            <div class="position-relative">
+                                <img src="{{ stream.thumbnail_url }}" 
+                                     class="card-img-top" 
+                                     alt="{{ stream.title }}"
+                                     style="height: 180px; object-fit: cover;">
+                                <span class="position-absolute top-0 start-0 m-2 badge bg-danger">
+                                    <i class="bi bi-circle-fill me-1"></i>LIVE
+                                </span>
+                                <span class="position-absolute bottom-0 end-0 m-2 badge bg-dark">
+                                    <i class="bi bi-eye-fill me-1"></i>{{ stream.viewer_count|intcomma }}
+                                </span>
+                            </div>
+                        </a>
+                        <div class="card-body">
+                            <h6 class="card-title mb-1 text-truncate">
+                                <a href="{% url 'streaming:watch' stream.stream_id %}" class="text-dark text-decoration-none">
+                                    {{ stream.title }}
+                                </a>
+                            </h6>
+                            <div class="d-flex align-items-center mb-2">
+                                <img src="https://ui-avatars.com/api/?name={{ stream.streamer_name|urlencode }}&size=24&rounded=true" 
+                                     alt="{{ stream.streamer_name }}" 
+                                     class="rounded-circle me-2">
+                                <small class="text-muted">{{ stream.streamer_name }}</small>
+                            </div>
+                            {% if stream.category %}
+                                <span class="badge bg-secondary">{{ stream.category }}</span>
+                            {% endif %}
+                            <div class="mt-2">
+                                <small class="text-muted">
+                                    <i class="bi bi-clock me-1"></i>
+                                    配信開始: {{ stream.started_at|naturaltime }}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- ページネーション -->
+        {% if streams.has_other_pages %}
+            <nav aria-label="ページナビゲーション" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if streams.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ streams.previous_page_number }}">前へ</a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for num in streams.paginator.page_range %}
+                        {% if streams.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if streams.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ streams.next_page_number }}">次へ</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-broadcast" style="font-size: 4rem; color: #ccc;"></i>
+            <h4 class="mt-3 text-muted">現在ライブ配信はありません</h4>
+            <p class="text-muted">配信が開始されるとここに表示されます</p>
+            <a href="{% url 'streaming:home' %}" class="btn btn-primary mt-3">
+                <i class="bi bi-house me-2"></i>ホームに戻る
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+.stream-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+}
+
+.stream-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1) !important;
+}
+
+.badge {
+    font-size: 0.75rem;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+.bi-circle-fill {
+    animation: pulse 2s infinite;
+}
+</style>
+
+<script>
+// ソート機能
+document.getElementById('sortSelect')?.addEventListener('change', function(e) {
+    const url = new URL(window.location);
+    url.searchParams.set('sort', e.target.value);
+    window.location.href = url.toString();
+});
+
+// 自動更新（30秒ごと）
+setInterval(() => {
+    // 視聴者数などの動的データを更新
+    fetch(window.location.href, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        // 必要に応じて視聴者数を更新
+        console.log('Live streams updated');
+    })
+    .catch(error => console.error('Update failed:', error));
+}, 30000);
+</script>
+{% endblock %}

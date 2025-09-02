@@ -1,0 +1,312 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}ユーザー管理 - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-2">ユーザー管理</h1>
+                    <p class="text-muted">システム内のユーザーアカウントを管理</p>
+                </div>
+                <div>
+                    <span class="badge bg-primary">管理者権限</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <h4 class="text-primary">{{ stats.total_users }}</h4>
+                    <small class="text-muted">総ユーザー数</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <h4 class="text-danger">{{ stats.system_admins }}</h4>
+                    <small class="text-muted">システム管理者</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <h4 class="text-warning">{{ stats.tenant_admins }}</h4>
+                    <small class="text-muted">テナント管理者</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <h4 class="text-info">{{ stats.tenant_users }}</h4>
+                    <small class="text-muted">配信者</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <h4 class="text-secondary">{{ stats.subscribers }}</h4>
+                    <small class="text-muted">登録者</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <h4 class="text-success">{{ stats.streamers }}</h4>
+                    <small class="text-muted">配信権限あり</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">検索</label>
+                            <input type="text" name="q" class="form-control" 
+                                   placeholder="ユーザー名、メールアドレス..." 
+                                   value="{{ search_query }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">ロール</label>
+                            <select name="role" class="form-select">
+                                <option value="">すべて</option>
+                                {% for value, display in role_choices %}
+                                    <option value="{{ value }}" {% if value == role_filter %}selected{% endif %}>
+                                        {{ display }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">メンバーシップ</label>
+                            <select name="membership" class="form-select">
+                                <option value="">すべて</option>
+                                {% for value, display in membership_choices %}
+                                    <option value="{{ value }}" {% if value == membership_filter %}selected{% endif %}>
+                                        {{ display }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-search me-1"></i>検索
+                                </button>
+                                <a href="{% url 'accounts:admin_users' %}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-x-circle me-1"></i>クリア
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User List -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ユーザー</th>
+                                    <th>ロール</th>
+                                    <th>メンバーシップ</th>
+                                    <th>配信権限</th>
+                                    <th>アクティブ</th>
+                                    <th>登録日</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in page_obj %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <img src="https://ui-avatars.com/api/?name={{ user.username|urlencode }}&size=40&rounded=true" 
+                                                     class="rounded-circle me-3" width="40" height="40">
+                                                <div>
+                                                    <div class="fw-semibold">{{ user.username }}</div>
+                                                    <small class="text-muted">{{ user.email }}</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge {% if user.role == 'system_admin' %}bg-danger{% elif user.role == 'tenant_admin' %}bg-warning{% elif user.role == 'tenant_user' %}bg-primary{% else %}bg-secondary{% endif %}">
+                                                {{ user.get_role_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge {% if user.membership == 'premium' %}bg-warning text-dark{% else %}bg-light text-dark{% endif %}">
+                                                {{ user.get_membership_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if user.can_stream %}
+                                                <span class="text-success"><i class="bi bi-check-circle-fill"></i></span>
+                                            {% else %}
+                                                <span class="text-muted"><i class="bi bi-x-circle"></i></span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if user.is_active %}
+                                                <span class="text-success"><i class="bi bi-check-circle-fill"></i></span>
+                                            {% else %}
+                                                <span class="text-danger"><i class="bi bi-x-circle-fill"></i></span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <small>{{ user.date_joined|date:"Y/m/d" }}</small>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{% url 'accounts:admin_user_detail' user.id %}" 
+                                                   class="btn btn-outline-primary">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                                <button class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split" 
+                                                        data-bs-toggle="dropdown">
+                                                    <span class="visually-hidden">その他</span>
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    <li><h6 class="dropdown-header">ロール変更</h6></li>
+                                                    {% for value, display in role_choices %}
+                                                        {% if value != user.role %}
+                                                            <li>
+                                                                <a class="dropdown-item" href="#" 
+                                                                   onclick="updateRole({{ user.id }}, '{{ value }}')">
+                                                                    {{ display }}
+                                                                </a>
+                                                            </li>
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                    <li><hr class="dropdown-divider"></li>
+                                                    <li>
+                                                        <a class="dropdown-item" href="#" 
+                                                           onclick="toggleStreaming({{ user.id }})">
+                                                            {% if user.can_stream %}配信権限を取り消し{% else %}配信権限を付与{% endif %}
+                                                        </a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="7" class="text-center text-muted py-4">
+                                            ユーザーが見つかりません
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if page_obj.has_other_pages %}
+                        <nav class="mt-4">
+                            <ul class="pagination justify-content-center">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ search_query }}&role={{ role_filter }}&membership={{ membership_filter }}">前へ</a>
+                                    </li>
+                                {% endif %}
+                                
+                                {% for num in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == num %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ num }}</span>
+                                        </li>
+                                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ num }}&q={{ search_query }}&role={{ role_filter }}&membership={{ membership_filter }}">{{ num }}</a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ search_query }}&role={{ role_filter }}&membership={{ membership_filter }}">次へ</a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateRole(userId, newRole) {
+    if (!confirm('ロールを変更しますか？')) return;
+    
+    fetch('{% url "accounts:api_update_role" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}',
+        },
+        body: JSON.stringify({
+            user_id: userId,
+            role: newRole
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('エラー: ' + data.error);
+        }
+    });
+}
+
+function toggleStreaming(userId) {
+    if (!confirm('配信権限を変更しますか？')) return;
+    
+    fetch('{% url "accounts:api_toggle_streaming" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}',
+        },
+        body: JSON.stringify({
+            user_id: userId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('エラー: ' + data.error);
+        }
+    });
+}
+</script>
+{% endblock %}
