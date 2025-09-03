@@ -441,3 +441,48 @@ def debug_user_auth(request):
         'user_agent': request.META.get('HTTP_USER_AGENT'),
         'has_session': bool(request.session.items()),
     })
+
+
+def obs_overlay(request, stream_id, token):
+    """OBS用チャットオーバーレイ画面"""
+    # ストリームとトークンの認証
+    try:
+        stream = Stream.objects.get(stream_id=stream_id, obs_overlay_token=token)
+        
+        # ライブ中でない場合は警告（ただし表示は継続）
+        if not stream.is_live:
+            pass  # 配信準備中でも表示可能にする
+            
+    except Stream.DoesNotExist:
+        return JsonResponse({'error': '無効なストリームまたはトークンです'}, status=404)
+    
+    context = {
+        'stream': stream,
+    }
+    return render(request, 'obs/overlay.html', context)
+
+
+@streaming_permission_required
+def generate_obs_token(request, stream_id):
+    """OBS用オーバーレイトークンを生成/再生成"""
+    stream = get_object_or_404(Stream, stream_id=stream_id, streamer=request.user)
+    
+    if request.method == 'POST':
+        # トークン生成/再生成
+        new_token = stream.generate_obs_overlay_token()
+        obs_url = stream.get_obs_overlay_url(request)
+        
+        return JsonResponse({
+            'success': True,
+            'token': new_token,
+            'obs_url': obs_url,
+            'message': 'OBS用URLを生成しました'
+        })
+    
+    # GET: 現在のトークン情報を取得
+    obs_url = stream.get_obs_overlay_url(request) if stream.obs_overlay_token else None
+    
+    return JsonResponse({
+        'has_token': bool(stream.obs_overlay_token),
+        'obs_url': obs_url
+    })

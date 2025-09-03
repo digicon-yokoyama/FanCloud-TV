@@ -1,5 +1,7 @@
 from django.db import models
 from django.conf import settings
+import uuid
+import secrets
 
 
 class Stream(models.Model):
@@ -64,6 +66,10 @@ class Stream(models.Model):
     subscriber_only_chat = models.BooleanField(default=False)
     enable_donations = models.BooleanField(default=False)
     mature_content = models.BooleanField(default=False)
+    
+    # OBS Overlay settings
+    obs_overlay_token = models.CharField(max_length=64, blank=True, help_text='OBS用オーバーレイアクセストークン')
+    obs_overlay_anonymous = models.BooleanField(default=False, help_text='ユーザー名を非表示にする（ニコニコ風匿名モード）')
     
     # Statistics
     viewer_count = models.IntegerField(default=0)
@@ -168,6 +174,39 @@ class Stream(models.Model):
         if count > self.peak_viewers:
             self.peak_viewers = count
         self.save(update_fields=['viewer_count', 'peak_viewers', 'updated_at'])
+    
+    def generate_obs_overlay_token(self):
+        """OBS用オーバーレイアクセストークンを生成"""
+        self.obs_overlay_token = secrets.token_urlsafe(32)
+        self.save(update_fields=['obs_overlay_token'])
+        return self.obs_overlay_token
+    
+    def get_obs_overlay_url(self, request=None, anonymous=None):
+        """OBS用オーバーレイURLを取得
+        
+        Args:
+            request: HTTPリクエストオブジェクト（ベースURL取得用）
+            anonymous: 匿名モード指定（True/False/None）
+                      Noneの場合はデフォルト設定を使用
+        """
+        if not self.obs_overlay_token:
+            self.generate_obs_overlay_token()
+        
+        if request:
+            base_url = request.build_absolute_uri('/')[:-1]  # Remove trailing slash
+        else:
+            base_url = 'http://localhost:8000'  # Fallback
+        
+        url = f"{base_url}/obs/overlay/{self.stream_id}/{self.obs_overlay_token}/"
+        
+        # 匿名モードパラメータを追加
+        if anonymous is True:
+            url += "?anonymous=true"
+        elif anonymous is False:
+            url += "?anonymous=false"
+        # anonymous=Noneの場合はパラメータを追加しない（デフォルト設定を使用）
+            
+        return url
 
 
 class StreamCategory(models.Model):

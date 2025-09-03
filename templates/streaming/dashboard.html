@@ -599,6 +599,7 @@
         <div class="dashboard-tabs">
             <div class="tab-nav">
                 <button class="tab-nav-item active" data-tab="settings">ライブ配信の設定</button>
+                <button class="tab-nav-item" data-tab="obs-settings">OBS連携</button>
                 <button class="tab-nav-item" data-tab="analytics">アナリティクス</button>
                 <button class="tab-nav-item" data-tab="stream-details">ストリームの詳細</button>
             </div>
@@ -764,6 +765,159 @@
                                     <div class="quality-desc">最短遅延（約1秒未満）、限定的な配信品質</div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- OBS Settings Tab -->
+            <div class="tab-content" id="obs-settings">
+                <div class="row">
+                    <div class="col-lg-8">
+                        <h6 style="margin-bottom: 16px;">OBS チャットオーバーレイ設定</h6>
+                        <p class="text-muted mb-4">配信ソフト（OBS Studio等）でニコニコ動画風のチャットオーバーレイを表示できます。</p>
+                        
+                        <!-- オーバーレイURL表示エリア -->
+                        <div class="stream-key-section">
+                            <!-- 通常モードURL -->
+                            <div class="form-group mb-3">
+                                <label class="form-label">
+                                    <i class="bi bi-person-fill text-primary"></i> 通常モード（ユーザー名表示）
+                                </label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="obs-overlay-url-normal" 
+                                           value="{% if stream.obs_overlay_token %}{{ stream.get_obs_overlay_url }}?anonymous=false{% else %}URLを生成してください{% endif %}" 
+                                           readonly>
+                                    <button class="btn btn-youtube-outline" type="button" onclick="copyToClipboard(document.getElementById('obs-overlay-url-normal').value)">
+                                        <i class="bi bi-clipboard"></i>
+                                    </button>
+                                    <button class="btn btn-youtube-outline" type="button" onclick="testObsOverlay('normal')" 
+                                            {% if not stream.obs_overlay_token %}disabled{% endif %}>
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                                <small class="text-muted">例: 「viewer: こんにちは！」</small>
+                            </div>
+                            
+                            <!-- 匿名モードURL -->
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i class="bi bi-incognito text-secondary"></i> 匿名モード（ニコニコ風）
+                                </label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="obs-overlay-url-anonymous" 
+                                           value="{% if stream.obs_overlay_token %}{{ stream.get_obs_overlay_url }}?anonymous=true{% else %}URLを生成してください{% endif %}" 
+                                           readonly>
+                                    <button class="btn btn-youtube-outline" type="button" onclick="copyToClipboard(document.getElementById('obs-overlay-url-anonymous').value)">
+                                        <i class="bi bi-clipboard"></i>
+                                    </button>
+                                    <button class="btn btn-youtube-outline" type="button" onclick="testObsOverlay('anonymous')" 
+                                            {% if not stream.obs_overlay_token %}disabled{% endif %}>
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                                <small class="text-muted">例: 「こんにちは！」（ユーザー名なし）</small>
+                            </div>
+                            
+                            <div class="d-flex gap-2 align-items-center mt-3">
+                                {% if not stream.obs_overlay_token %}
+                                <button class="btn btn-youtube" onclick="generateObsToken()">
+                                    🔗 URL生成
+                                </button>
+                                {% else %}
+                                <div class="alert alert-success mb-0 flex-grow-1" style="font-size: 13px;">
+                                    <i class="bi bi-check-circle"></i>
+                                    URLが生成済みです。上記のURLをOBSに設定してください
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- OBS設定手順 -->
+                        <div class="mt-4">
+                            <h6 style="margin-bottom: 16px;">OBS Studio設定手順</h6>
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <strong>1. ブラウザソースを追加</strong>
+                                        <p class="mb-1 text-muted">OBS → ソース → + → ブラウザ</p>
+                                    </div>
+                                    <div class="mb-3">
+                                        <strong>2. URL設定</strong>
+                                        <p class="mb-1 text-muted">上記の「OBS用 チャットオーバーレイURL」をコピーしてURL欄に貼り付け</p>
+                                    </div>
+                                    <div class="mb-3">
+                                        <strong>3. サイズ設定</strong>
+                                        <p class="mb-1 text-muted">幅: 1920, 高さ: 1080 （配信解像度に合わせて調整）</p>
+                                    </div>
+                                    <div class="mb-3">
+                                        <strong>4. クロマキー設定</strong>
+                                        <p class="mb-1 text-muted">フィルタ → + → クロマキー → 色を選択: 緑 (#00FF00)</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-4">
+
+                        <div class="mt-4">
+                            <h6 style="margin-bottom: 16px;">モード選択について</h6>
+                            <div class="row">
+                                <div class="col-6">
+                                    <div class="card">
+                                        <div class="card-body text-center p-2">
+                                            <i class="bi bi-person-fill text-primary"></i>
+                                            <div class="fw-bold small">通常モード</div>
+                                            <div style="font-size: 11px; color: #666;">
+                                                viewer: こんにちは<br>
+                                                streamer 😊
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="card">
+                                        <div class="card-body text-center p-2">
+                                            <i class="bi bi-incognito text-secondary"></i>
+                                            <div class="fw-bold small">匿名モード</div>
+                                            <div style="font-size: 11px; color: #666;">
+                                                こんにちは<br>
+                                                😊
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <small class="text-muted d-block mt-2">
+                                <i class="bi bi-info-circle"></i> 配信スタイルに合わせてモードを選択してください
+                            </small>
+                        </div>
+
+                        <div class="mt-4">
+                            <h6 style="margin-bottom: 16px;">機能説明</h6>
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <i class="bi bi-check-circle text-success me-2"></i>
+                                    チャットメッセージが右から左に流れる
+                                </li>
+                                <li class="mb-2">
+                                    <i class="bi bi-check-circle text-success me-2"></i>
+                                    リアクション/スタンプも表示対応
+                                </li>
+                                <li class="mb-2">
+                                    <i class="bi bi-check-circle text-success me-2"></i>
+                                    重複回避で読みやすい配置
+                                </li>
+                                <li class="mb-2">
+                                    <i class="bi bi-check-circle text-success me-2"></i>
+                                    匿名モード対応（ニコニコ動画風）
+                                </li>
+                                <li class="mb-2">
+                                    <i class="bi bi-check-circle text-success me-2"></i>
+                                    セキュアなトークンで保護
+                                </li>
+                            </ul>
                         </div>
                     </div>
                 </div>
@@ -1036,6 +1190,49 @@ function getCookie(name) {
 function deleteStream() {
     if (confirm('この配信を削除しますか？この操作は元に戻せません。')) {
         window.location.href = `{% url "streaming:delete_stream" stream.stream_id %}`;
+    }
+}
+
+// OBS オーバーレイ関連機能
+function generateObsToken() {
+    fetch(`{% url 'streaming:generate_obs_token' stream.stream_id %}`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json'
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // ページをリロードして新しいURLを表示
+            alert('OBS用URLを生成しました！');
+            window.location.reload();
+        } else {
+            alert('URL生成に失敗しました: ' + (data.error || '不明なエラー'));
+        }
+    })
+    .catch(error => {
+        console.error('OBS token generation error:', error);
+        alert('URL生成に失敗しました');
+    });
+}
+
+function testObsOverlay(mode) {
+    let obsUrl;
+    if (mode === 'anonymous') {
+        obsUrl = document.getElementById('obs-overlay-url-anonymous').value;
+    } else {
+        obsUrl = document.getElementById('obs-overlay-url-normal').value;
+    }
+    
+    if (obsUrl && obsUrl !== 'URLを生成してください') {
+        // すでにanonymousパラメータが含まれているので、debugパラメータを追加
+        const separator = obsUrl.includes('?') ? '&' : '?';
+        window.open(obsUrl + separator + 'debug=true', '_blank');
+    } else {
+        alert('まずURLを生成してください');
     }
 }
 </script>

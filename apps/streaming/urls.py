@@ -25,4 +25,8 @@ urlpatterns = [
     path('api/stream/', views.StreamAPIView.as_view(), name='stream_api'),
     path('api/stream/<str:stream_id>/status/', views.stream_status_api, name='stream_status_api'),
     path('debug/auth/', views.debug_user_auth, name='debug_auth'),
+    
+    # OBS Overlay
+    path('obs/overlay/<str:stream_id>/<str:token>/', views.obs_overlay, name='obs_overlay'),
+    path('api/obs/<str:stream_id>/token/', views.generate_obs_token, name='generate_obs_token'),
 ]

@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, height=1080">
+    <title>OBS Chat Overlay - {{ stream.title }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            width: 1920px;
+            height: 1080px;
+            background-color: #00FF00; /* OBS クロマキー用グリーンバック */
+            font-family: 'Noto Sans JP', Arial, sans-serif;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        /* ニコニコ動画風チャットコンテナ */
+        .chat-overlay-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+        }
+        
+        /* チャットメッセージ */
+        .floating-chat-message {
+            position: absolute;
+            white-space: nowrap;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            animation: slideRightToLeft 10s linear forwards;
+            z-index: 1001;
+        }
+        
+        /* 通常チャットメッセージ */
+        .floating-chat-message.normal {
+            font-size: 24px;
+            color: #FFFFFF;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 6px 12px;
+            border-radius: 20px;
+            backdrop-filter: blur(4px);
+        }
+        
+        /* リアクション/スタンプメッセージ */
+        .floating-chat-message.reaction {
+            font-size: 28px;
+            color: #FFD700;
+            background: rgba(255, 215, 0, 0.2);
+            padding: 8px 16px;
+            border-radius: 25px;
+            border: 2px solid #FFD700;
+            backdrop-filter: blur(4px);
+        }
+        
+        /* 右から左へのアニメーション */
+        @keyframes slideRightToLeft {
+            0% {
+                transform: translateX(1920px);
+                opacity: 1;
+            }
+            5% {
+                opacity: 1;
+            }
+            95% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(-100%);
+                opacity: 0;
+            }
+        }
+        
+        /* スタンプ画像 */
+        .stamp-image {
+            width: 32px;
+            height: 32px;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        
+        /* ユーザー名の色バリエーション */
+        .username {
+            margin-right: 8px;
+        }
+        
+        .username.color-1 { color: #FF6B6B; }
+        .username.color-2 { color: #4ECDC4; }
+        .username.color-3 { color: #45B7D1; }
+        .username.color-4 { color: #96CEB4; }
+        .username.color-5 { color: #FECA57; }
+        .username.color-6 { color: #FF9FF3; }
+        .username.color-7 { color: #54A0FF; }
+        .username.color-8 { color: #5F27CD; }
+        
+        /* レスポンシブ対応（1080p以外） */
+        @media (max-height: 720px) {
+            .floating-chat-message.normal { font-size: 18px; }
+            .floating-chat-message.reaction { font-size: 22px; }
+            .stamp-image { width: 24px; height: 24px; }
+        }
+        
+        @media (max-height: 480p) {
+            .floating-chat-message.normal { font-size: 14px; }
+            .floating-chat-message.reaction { font-size: 18px; }
+            .stamp-image { width: 20px; height: 20px; }
+        }
+        
+        /* デバッグ用（本番では削除） */
+        .debug-info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            background: rgba(0,0,0,0.7);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            z-index: 9999;
+        }
+    </style>
+</head>
+<body>
+    <!-- OBS用チャットオーバーレイコンテナ -->
+    <div class="chat-overlay-container" id="chat-overlay-container">
+        <!-- チャットメッセージがここに動的に追加されます -->
+    </div>
+    
+    <!-- デバッグ情報 -->
+    <div class="debug-info" id="debug-info" style="display: none;">
+        <div>Stream: {{ stream.stream_id }}</div>
+        <div>Status: <span id="connection-status">接続中...</span></div>
+        <div>Messages: <span id="message-count">0</span></div>
+    </div>
+
+    <script>
+        // WebSocket接続設定
+        const streamId = '{{ stream.stream_id }}';
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = protocol + '//' + window.location.host + '/ws/chat/' + streamId + '/';
+        
+        let chatSocket = null;
+        let messageCount = 0;
+        let verticalPositions = []; // Y座標管理
+        const messageHeight = 50; // メッセージの高さ
+        const maxMessages = 20; // 同時表示最大数
+        
+        // ユーザー名の色を決定（ハッシュベース）
+        function getUsernameColor(username) {
+            let hash = 0;
+            for (let i = 0; i < username.length; i++) {
+                hash = username.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            return Math.abs(hash) % 8 + 1;
+        }
+        
+        // Y座標を取得（重複回避）
+        function getAvailableYPosition() {
+            const maxY = 1080 - 100; // 画面下部マージン
+            const minY = 50; // 画面上部マージン
+            
+            // 利用可能なY座標を探す
+            for (let y = minY; y <= maxY; y += messageHeight) {
+                if (!verticalPositions.includes(y)) {
+                    verticalPositions.push(y);
+                    // 10秒後に解放
+                    setTimeout(() => {
+                        const index = verticalPositions.indexOf(y);
+                        if (index > -1) {
+                            verticalPositions.splice(index, 1);
+                        }
+                    }, 10000);
+                    return y;
+                }
+            }
+            
+            // 全て埋まっている場合はランダム
+            return Math.random() * (maxY - minY) + minY;
+        }
+        
+        // 設定を取得
+        function getOverlaySettings() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return {
+                anonymous: urlParams.get('anonymous') === 'true' || {{ stream.obs_overlay_anonymous|yesno:"true,false" }},
+                debug: urlParams.get('debug') === 'true'
+            };
+        }
+        
+        // チャットメッセージを画面に表示
+        function displayFloatingMessage(data) {
+            const container = document.getElementById('chat-overlay-container');
+            const messageElement = document.createElement('div');
+            const settings = getOverlaySettings();
+            
+            const isReaction = data.type === 'reaction' || data.stamp_name;
+            const yPosition = getAvailableYPosition();
+            const username = data.username || 'Anonymous';
+            const colorClass = `color-${getUsernameColor(username)}`;
+            
+            // メッセージタイプに応じてクラスを設定
+            messageElement.className = `floating-chat-message ${isReaction ? 'reaction' : 'normal'}`;
+            messageElement.style.top = yPosition + 'px';
+            
+            let content = '';
+            
+            if (isReaction) {
+                // リアクション/スタンプメッセージ
+                const stampImage = data.stamp_image_url ? 
+                    `<img src="${data.stamp_image_url}" alt="${data.stamp_name}" class="stamp-image">` : 
+                    '';
+                
+                if (settings.anonymous) {
+                    // 匿名モード: スタンプのみ表示
+                    content = `${stampImage}`;
+                } else {
+                    // 通常モード: ユーザー名 + スタンプ
+                    content = `<span class="username ${colorClass}">${username}</span>${stampImage}`;
+                }
+            } else {
+                // 通常のチャットメッセージ
+                if (settings.anonymous) {
+                    // 匿名モード: メッセージのみ（ユーザー名なし）
+                    content = `${data.message || data.content}`;
+                } else {
+                    // 通常モード: ユーザー名 + メッセージ
+                    content = `<span class="username ${colorClass}">${username}:</span>${data.message || data.content}`;
+                }
+            }
+            
+            messageElement.innerHTML = content;
+            container.appendChild(messageElement);
+            
+            // 10秒後にDOMから削除
+            setTimeout(() => {
+                if (messageElement.parentNode) {
+                    messageElement.parentNode.removeChild(messageElement);
+                }
+            }, 10000);
+            
+            // カウンター更新
+            messageCount++;
+            document.getElementById('message-count').textContent = messageCount;
+        }
+        
+        // WebSocket接続開始
+        function initializeWebSocket() {
+            console.log('🔌 OBS Overlay: Connecting to WebSocket:', wsUrl);
+            
+            chatSocket = new WebSocket(wsUrl);
+            
+            chatSocket.onopen = function(e) {
+                console.log('🔌 OBS Overlay: WebSocket connected successfully');
+                document.getElementById('connection-status').textContent = '接続中';
+                document.getElementById('connection-status').style.color = '#4CAF50';
+            };
+            
+            chatSocket.onmessage = function(e) {
+                try {
+                    const data = JSON.parse(e.data);
+                    console.log('🔌 OBS Overlay: Received message:', data);
+                    
+                    // エラーハンドリング
+                    if (data.error) {
+                        console.error('🔌 OBS Overlay: WebSocket error:', data.error);
+                        return;
+                    }
+                    
+                    // メッセージ表示
+                    displayFloatingMessage(data);
+                    
+                } catch (err) {
+                    console.error('🔌 OBS Overlay: Failed to parse message:', err);
+                }
+            };
+            
+            chatSocket.onclose = function(e) {
+                console.log('🔌 OBS Overlay: WebSocket disconnected');
+                document.getElementById('connection-status').textContent = '切断';
+                document.getElementById('connection-status').style.color = '#F44336';
+                
+                // 3秒後に再接続試行
+                setTimeout(initializeWebSocket, 3000);
+            };
+            
+            chatSocket.onerror = function(e) {
+                console.error('🔌 OBS Overlay: WebSocket error:', e);
+                document.getElementById('connection-status').textContent = 'エラー';
+                document.getElementById('connection-status').style.color = '#FF9800';
+            };
+        }
+        
+        // 設定に基づく初期化
+        function applyOverlaySettings() {
+            const settings = getOverlaySettings();
+            
+            // デバッグモード
+            if (settings.debug) {
+                document.getElementById('debug-info').style.display = 'block';
+                
+                // 設定状況を表示
+                const debugInfo = document.getElementById('debug-info');
+                debugInfo.innerHTML += `<div>匿名モード: ${settings.anonymous ? 'ON' : 'OFF'}</div>`;
+            }
+            
+            console.log('🎥 OBS Overlay Settings:', settings);
+        }
+        
+        // ページ読み込み時に初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            applyOverlaySettings();
+            initializeWebSocket();
+            
+            console.log('🎥 OBS Chat Overlay initialized for stream:', streamId);
+        });
+        
+        // ページ離脱時にWebSocket切断
+        window.addEventListener('beforeunload', function() {
+            if (chatSocket) {
+                chatSocket.close();
+            }
+        });
+    </script>
+</body>
+</html>
