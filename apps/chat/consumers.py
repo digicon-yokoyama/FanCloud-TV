@@ -181,6 +181,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
         
         try:
             text_data_json = json.loads(text_data)
+            message_type = text_data_json.get('type', 'message')
+            
+            if message_type == 'reaction':
+                # Handle reaction
+                await self.handle_reaction(text_data_json)
+                return
+            
             message = text_data_json['message'].strip()
 
             print(f"📨 WS RECEIVE: Message: {message[:50]}...")
@@ -258,6 +265,118 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'message_type': message_type,
             'timestamp': None  # Will be added by frontend
         }))
+    
+    async def handle_reaction(self, data):
+        """Handle reaction to a message."""
+        try:
+            stamp_id = data.get('stamp_id')
+            stamp_name = data.get('stamp_name')
+            stamp_image_url = data.get('stamp_image_url')
+            
+            if not stamp_id:
+                await self.send(text_data=json.dumps({
+                    'error': 'スタンプIDが必要です'
+                }))
+                return
+            
+            # データベースにリアクションを保存（統計用）
+            await self.save_stream_reaction(stamp_id)
+            
+            # 全チャット参加者にリアクションを配信
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'reaction_broadcast',
+                    'stamp_id': stamp_id,
+                    'stamp_name': stamp_name,
+                    'stamp_image_url': stamp_image_url,
+                    'username': self.authenticated_username
+                }
+            )
+                
+        except Exception as e:
+            print(f"Reaction error: {e}")
+            await self.send(text_data=json.dumps({
+                'error': 'リアクション処理でエラーが発生しました'
+            }))
+    
+    async def reaction_broadcast(self, event):
+        """Send stream reaction to WebSocket."""
+        await self.send(text_data=json.dumps({
+            'type': 'reaction',
+            'stamp_id': event['stamp_id'],
+            'stamp_name': event['stamp_name'],
+            'stamp_image_url': event['stamp_image_url'],
+            'username': event['username']
+        }))
+    
+    @database_sync_to_async
+    def save_stream_reaction(self, stamp_id):
+        """Save stream reaction to database for analytics."""
+        try:
+            from apps.streaming.models import Stream, StreamReaction
+            from apps.chat.models import ChatStamp
+            
+            # Get stream from room name (assuming room name is stream_id)
+            try:
+                stream = Stream.objects.get(stream_id=self.room_name)
+                stamp = ChatStamp.objects.get(id=stamp_id)
+                user = self.scope["user"]
+                
+                # Create StreamReaction for analytics
+                StreamReaction.objects.create(
+                    stream=stream,
+                    user=user,
+                    stamp=stamp
+                )
+                print(f"✅ Saved stream reaction: {user.username} -> {stamp.name}")
+                
+            except (Stream.DoesNotExist, ChatStamp.DoesNotExist) as e:
+                print(f"❌ Failed to save stream reaction: {e}")
+                
+        except Exception as e:
+            print(f"❌ Error saving stream reaction: {e}")
+    
+    @database_sync_to_async
+    def toggle_reaction_db(self, message_id, stamp_id):
+        """Toggle reaction in database."""
+        try:
+            from .models import ChatMessage, ChatStamp, ChatReaction
+            from django.contrib.auth import get_user_model
+            
+            User = get_user_model()
+            
+            message = ChatMessage.objects.get(id=message_id)
+            stamp = ChatStamp.objects.get(id=stamp_id, is_active=True)
+            user = User.objects.get(id=self.authenticated_user_id)
+            
+            # Check if reaction exists
+            reaction, created = ChatReaction.objects.get_or_create(
+                message=message,
+                user=user,
+                stamp=stamp
+            )
+            
+            if created:
+                action = 'added'
+            else:
+                reaction.delete()
+                action = 'removed'
+            
+            # Get updated count
+            count = ChatReaction.objects.filter(message=message, stamp=stamp).count()
+            
+            return {
+                'success': True,
+                'action': action,
+                'count': count
+            }
+            
+        except Exception as e:
+            return {
+                'success': False,
+                'error': str(e)
+            }
     
     @database_sync_to_async
     def get_or_create_room(self):

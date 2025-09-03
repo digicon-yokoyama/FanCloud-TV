@@ -59,7 +59,7 @@ class MockStreamingService:
         if stream_id in self.streams:
             self.streams[stream_id]['status'] = 'live'
             self.streams[stream_id]['started_at'] = datetime.now().isoformat()
-            self.streams[stream_id]['viewer_count'] = random.randint(1, 100)
+            self.streams[stream_id]['viewer_count'] = 0  # Start with 0 viewers
             return self.streams[stream_id]
         return {'error': 'Stream not found'}
     
@@ -80,9 +80,9 @@ class MockStreamingService:
                     'description': stream['description'],
                     'playback_url': f"https://mock-cdn.streaming-platform.local/vod/{recording_id}.m3u8",
                     'thumbnail_url': f"https://mock-cdn.streaming-platform.local/vod/{recording_id}/thumbnail.jpg",
-                    'duration': random.randint(300, 7200),  # 5min to 2hours
+                    'duration': 0,  # Will be calculated from actual stream duration
                     'created_at': stream.get('started_at', datetime.now().isoformat()),
-                    'file_size': random.randint(100, 2000) * 1024 * 1024,  # 100MB to 2GB
+                    'file_size': 0,  # Will be calculated from actual recording
                     'status': 'ready'
                 }
                 self.recordings[recording_id] = recording_data
@@ -95,13 +95,8 @@ class MockStreamingService:
         """Get current stream status."""
         if stream_id in self.streams:
             stream = self.streams[stream_id].copy()
-            if stream['status'] == 'live':
-                # Simulate changing viewer count
-                stream['viewer_count'] = random.randint(
-                    max(1, stream['viewer_count'] - 10),
-                    stream['viewer_count'] + 20
-                )
-                self.streams[stream_id]['viewer_count'] = stream['viewer_count']
+            # Return actual viewer count without random changes
+            # In production, this would come from the streaming service
             return stream
         return {'error': 'Stream not found'}
     
@@ -115,9 +110,9 @@ class MockStreamingService:
             'description': description,
             'playback_url': f"https://mock-cdn.streaming-platform.local/vod/{recording_id}.m3u8",
             'thumbnail_url': f"https://mock-cdn.streaming-platform.local/vod/{recording_id}/thumbnail.jpg",
-            'duration': random.randint(60, 3600),  # 1min to 1hour
+            'duration': 0,  # Will be set when processing completes
             'created_at': datetime.now().isoformat(),
-            'file_size': file_size or random.randint(50, 500) * 1024 * 1024,  # 50MB to 500MB
+            'file_size': file_size or 0,  # Will be set from actual file
             'status': 'processing',
             'progress': 0
         }
@@ -130,8 +125,8 @@ class MockStreamingService:
         if recording_id in self.recordings:
             recording = self.recordings[recording_id].copy()
             if recording['status'] == 'processing':
-                # Simulate processing progress
-                recording['progress'] = min(100, recording.get('progress', 0) + random.randint(5, 20))
+                # Simulate processing progress - for now, instantly complete
+                recording['progress'] = 100
                 if recording['progress'] >= 100:
                     recording['status'] = 'ready'
                 self.recordings[recording_id] = recording
@@ -168,22 +163,20 @@ class MockStreamingService:
         end_date = datetime.now()
         start_date = end_date - timedelta(days=days)
         
+        # Return zero analytics for development
+        # In production, this would query real analytics
         analytics = {
             'period': {
                 'start': start_date.isoformat(),
                 'end': end_date.isoformat()
             },
-            'total_views': random.randint(100, 10000),
-            'unique_viewers': random.randint(50, 5000),
-            'total_watch_time': random.randint(1000, 100000),  # minutes
-            'peak_concurrent_viewers': random.randint(10, 500),
-            'average_watch_time': random.randint(5, 45),  # minutes
-            'engagement_rate': round(random.uniform(0.1, 0.8), 2),
-            'top_countries': [
-                {'country': 'Japan', 'views': random.randint(100, 1000)},
-                {'country': 'United States', 'views': random.randint(50, 500)},
-                {'country': 'South Korea', 'views': random.randint(20, 200)},
-            ]
+            'total_views': 0,
+            'unique_viewers': 0,
+            'total_watch_time': 0,  # minutes
+            'peak_concurrent_viewers': 0,
+            'average_watch_time': 0,  # minutes
+            'engagement_rate': 0.0,
+            'top_countries': []
         }
         
         if stream_id and stream_id in self.streams:

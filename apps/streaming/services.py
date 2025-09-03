@@ -105,23 +105,24 @@ class MockStreamingProvider:
     
     def get_stream_status(self, stream_id):
         """Get current stream status."""
-        # Mock status - in real implementation, this would query the streaming service
-        statuses = ['created', 'live', 'ended']
+        # Mock status - return default values for development
+        # In production, this would query the actual streaming service
         return {
             'stream_id': stream_id,
-            'status': random.choice(statuses),
+            'status': 'unknown',  # Will be managed by Django model
             'health': 'good',  # good, warning, error
-            'uptime': random.randint(0, 3600),  # seconds
+            'uptime': 0,  # seconds
         }
     
     def get_viewer_count(self, stream_id):
         """Get current viewer count."""
-        # Mock viewer count - simulate realistic numbers
+        # Mock viewer count - return 0 for development
+        # In production, this would query the actual streaming service
         return {
             'stream_id': stream_id,
-            'current_viewers': random.randint(0, 1000),
-            'peak_viewers': random.randint(50, 1500),
-            'total_views': random.randint(100, 5000),
+            'current_viewers': 0,
+            'peak_viewers': 0,
+            'total_views': 0,
         }
     
     def update_stream_settings(self, stream_id, settings):

@@ -242,11 +242,13 @@ class StreamAPIView(View):
         
         elif action == 'stop':
             # Stop streaming
+            from django.utils import timezone
             streaming_service = StreamingService()
             result = streaming_service.end_stream(stream_id)
             if 'error' not in result:
                 Stream.objects.filter(stream_id=stream_id).update(
-                    status='ended'
+                    status='ended',
+                    ended_at=timezone.now()
                 )
             return JsonResponse(result)
         
@@ -299,10 +301,11 @@ def end_stream(request, stream_id):
     try:
         stream.end_stream()
         messages.success(request, '配信を終了しました。')
+        # 配信一覧ページにリダイレクト（終了後はダッシュボードよりも一覧が見やすい）
+        return redirect('streaming:my_streams')
     except Exception as e:
         messages.error(request, f'配信終了に失敗しました: {str(e)}')
-    
-    return redirect('streaming:stream_dashboard', stream_id=stream_id)
+        return redirect('streaming:stream_dashboard', stream_id=stream_id)
 
 
 @streaming_permission_required

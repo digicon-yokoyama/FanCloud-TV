@@ -100,3 +100,38 @@
         </div>
     {% endif %}
 {% endblock %}
+
+{% block extra_js %}
+<script>
+// ライブ配信のステータスを定期的に更新
+function updateLiveStreams() {
+    fetch(window.location.href, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.text())
+    .then(html => {
+        // DOMパーサーを使って新しいHTMLを解析
+        const parser = new DOMParser();
+        const newDoc = parser.parseFromString(html, 'text/html');
+        
+        // ライブ配信セクションを更新
+        const currentLiveSection = document.querySelector('.mb-5:first-child');
+        const newLiveSection = newDoc.querySelector('.mb-5:first-child');
+        
+        if (currentLiveSection && newLiveSection) {
+            // ライブ配信セクションが変更された場合のみ更新
+            if (currentLiveSection.innerHTML !== newLiveSection.innerHTML) {
+                currentLiveSection.innerHTML = newLiveSection.innerHTML;
+                console.log('Live streams updated');
+            }
+        }
+    })
+    .catch(error => console.error('Failed to update live streams:', error));
+}
+
+// 30秒ごとに更新
+setInterval(updateLiveStreams, 30000);
+</script>
+{% endblock %}

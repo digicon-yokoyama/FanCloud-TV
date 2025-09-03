@@ -1,0 +1,292 @@
+{% load static %}
+
+<!-- リアクション機能ウィジェット -->
+<div class="reaction-widget">
+    <!-- リアクションボタンパネル -->
+    <div class="reaction-buttons-panel bg-white rounded shadow-sm p-3 mb-3" style="border: 1px solid #e5e5e5;">
+        <div class="d-flex justify-content-center align-items-center">
+            <small class="me-3 text-muted fw-bold">リアクション:</small>
+            <div class="reaction-buttons d-flex gap-2">
+                <!-- SVGスタンプボタンは動的にロード -->
+            </div>
+        </div>
+    </div>
+
+    <!-- リアクションエフェクトエリア -->
+    <div class="reaction-effects-area" id="reaction-effects">
+        <!-- リアクションアニメーションがここに表示 -->
+    </div>
+</div>
+
+<!-- CSS -->
+<style>
+.reaction-widget {
+    position: relative;
+}
+
+.reaction-buttons button {
+    width: 48px;
+    height: 48px;
+    border: 2px solid #e5e5e5;
+    border-radius: 50%;
+    background: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.reaction-buttons button:hover {
+    transform: scale(1.1);
+    border-color: #007bff;
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+}
+
+.reaction-buttons button:active {
+    transform: scale(0.95);
+}
+
+.reaction-buttons button img,
+.reaction-buttons button svg {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+}
+
+/* リアクションエフェクトエリア */
+.reaction-effects-area {
+    position: absolute;
+    top: -200px;
+    left: 0;
+    right: 0;
+    height: 200px;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 10;
+}
+
+/* 流れるリアクションアニメーション */
+@keyframes floatUp {
+    0% {
+        opacity: 1;
+        transform: translateY(0) rotate(0deg) scale(1);
+    }
+    50% {
+        opacity: 0.8;
+        transform: translateY(-50px) rotate(180deg) scale(1.2);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-150px) rotate(360deg) scale(0.5);
+    }
+}
+
+.floating-reaction {
+    position: absolute;
+    animation: floatUp 3s ease-out forwards;
+    pointer-events: none;
+    z-index: 15;
+}
+
+.floating-reaction img,
+.floating-reaction svg {
+    width: 32px;
+    height: 32px;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+}
+
+/* リアクション統計表示 */
+.reaction-stats {
+    position: absolute;
+    bottom: -40px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    display: none;
+}
+
+.reaction-stats.show {
+    display: block;
+    animation: fadeInOut 2s ease;
+}
+
+@keyframes fadeInOut {
+    0%, 100% { opacity: 0; }
+    50% { opacity: 1; }
+}
+</style>
+
+<!-- JavaScript -->
+<script>
+let reactionSocket = null;
+let availableReactions = [];
+let reactionCounts = {};
+
+// リアクション機能初期化
+function initializeReactions() {
+    // WebSocket接続
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = protocol + '//' + window.location.host + '/ws/reactions/{{ video.stream_id }}/';
+    
+    reactionSocket = new WebSocket(wsUrl);
+    
+    reactionSocket.onopen = function(e) {
+        console.log('🎉 Reaction WebSocket connected');
+    };
+    
+    reactionSocket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        
+        if (data.type === 'reaction') {
+            showFloatingReaction(data.stamp_id, data.stamp_image_url, data.username);
+            updateReactionStats(data.stamp_id);
+        }
+    };
+    
+    reactionSocket.onclose = function(e) {
+        console.log('❌ Reaction WebSocket disconnected');
+        // 再接続を試行
+        setTimeout(initializeReactions, 3000);
+    };
+    
+    reactionSocket.onerror = function(e) {
+        console.error('🚨 Reaction WebSocket error:', e);
+    };
+    
+    // スタンプデータをロード
+    loadAvailableReactions();
+}
+
+// 利用可能なリアクション（スタンプ）をロード
+function loadAvailableReactions() {
+    fetch('/api/chat/stamps/', {
+        credentials: 'same-origin',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.stamps) {
+            availableReactions = data.stamps;
+            renderReactionButtons();
+        }
+    })
+    .catch(error => console.error('Failed to load reactions:', error));
+}
+
+// リアクションボタンを描画
+function renderReactionButtons() {
+    const buttonsContainer = document.querySelector('.reaction-buttons');
+    if (!buttonsContainer) return;
+    
+    buttonsContainer.innerHTML = '';
+    
+    availableReactions.forEach(reaction => {
+        const button = document.createElement('button');
+        button.className = 'btn';
+        button.title = `${reaction.name} でリアクション`;
+        button.onclick = () => sendReaction(reaction.id, reaction.name, reaction.image_url);
+        
+        if (reaction.image_url) {
+            if (reaction.image_url.endsWith('.svg')) {
+                // SVGファイルの場合
+                button.innerHTML = `<img src="${reaction.image_url}" alt="${reaction.name}" />`;
+            } else {
+                button.innerHTML = `<img src="${reaction.image_url}" alt="${reaction.name}" />`;
+            }
+        } else {
+            button.innerHTML = reaction.name;
+        }
+        
+        buttonsContainer.appendChild(button);
+    });
+}
+
+// リアクションを送信
+function sendReaction(stampId, stampName, stampImageUrl) {
+    if (!reactionSocket || reactionSocket.readyState !== WebSocket.OPEN) {
+        console.error('WebSocket not connected');
+        return;
+    }
+    
+    // 自分のリアクションを即座に表示
+    showFloatingReaction(stampId, stampImageUrl, '{{ user.username }}');
+    
+    // WebSocketで他の視聴者に送信
+    reactionSocket.send(JSON.stringify({
+        'type': 'stream_reaction',
+        'stamp_id': stampId,
+        'stamp_name': stampName,
+        'stamp_image_url': stampImageUrl,
+        'stream_id': '{{ video.stream_id }}'
+    }));
+}
+
+// 流れるリアクションエフェクトを表示
+function showFloatingReaction(stampId, stampImageUrl, username) {
+    const effectsArea = document.getElementById('reaction-effects');
+    if (!effectsArea) return;
+    
+    const reaction = document.createElement('div');
+    reaction.className = 'floating-reaction';
+    
+    // ランダムな開始位置
+    const startX = Math.random() * 80 + 10; // 10% - 90%の範囲
+    reaction.style.left = startX + '%';
+    
+    // ランダムな遅延とアニメーション時間
+    const delay = Math.random() * 0.5; // 0-0.5秒の遅延
+    const duration = 2.5 + Math.random() * 1; // 2.5-3.5秒のアニメーション
+    
+    reaction.style.animationDelay = delay + 's';
+    reaction.style.animationDuration = duration + 's';
+    
+    if (stampImageUrl) {
+        reaction.innerHTML = `<img src="${stampImageUrl}" alt="reaction" />`;
+    } else {
+        reaction.innerHTML = '❤️'; // フォールバック
+    }
+    
+    effectsArea.appendChild(reaction);
+    
+    // アニメーション終了後に要素を削除
+    setTimeout(() => {
+        if (reaction.parentNode) {
+            reaction.parentNode.removeChild(reaction);
+        }
+    }, (delay + duration) * 1000 + 100);
+}
+
+// リアクション統計を更新
+function updateReactionStats(stampId) {
+    if (!reactionCounts[stampId]) {
+        reactionCounts[stampId] = 0;
+    }
+    reactionCounts[stampId]++;
+    
+    // 統計表示エリアの更新（配信者用）
+    updateReactionStatsDisplay();
+}
+
+function updateReactionStatsDisplay() {
+    // TODO: 配信者用の統計表示を実装
+    console.log('Current reaction counts:', reactionCounts);
+}
+
+// ページロード時にリアクション機能を初期化
+document.addEventListener('DOMContentLoaded', function() {
+    {% if video.is_live and user.is_authenticated %}
+        initializeReactions();
+    {% endif %}
+});
+
+// ページ離脱時にWebSocket接続を閉じる
+window.addEventListener('beforeunload', function() {
+    if (reactionSocket) {
+        reactionSocket.close();
+    }
+});
+</script>

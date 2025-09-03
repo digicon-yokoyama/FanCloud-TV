@@ -3,11 +3,12 @@
 <!-- チャット機能ウィジェット -->
 {% if show_chat and video.is_live and video.enable_chat %}
 <div class="chat-widget">
-    <div class="chat-container mb-4" style="display: block !important; visibility: visible !important; height: auto !important; overflow: visible !important; min-height: 500px; border: 2px solid #007bff; background: #f8f9fa;">
-        
+    <div class="chat-container mb-4 position-relative" style="display: block !important; visibility: visible !important; height: auto !important; overflow: visible !important; min-height: 500px; border: 2px solid #007bff; background: #f8f9fa;">
         
         <!-- チャットメッセージ表示エリア -->
-        <div class="chat-messages" id="chat-messages" style="height: 400px; overflow-y: auto; padding: 12px; background-color: #fafafa;">
+        <div class="chat-messages position-relative" id="chat-messages" style="height: 400px; overflow-y: auto; padding: 12px; background-color: #fafafa;">
+            <!-- 一時的リアクション表示エリア（チャットエリア内の上部） -->
+            <div id="temporary-reaction-area" class="temporary-reaction-area"></div>
             <!-- チャットメッセージがここに表示されます -->
             <div class="chat-placeholder text-center text-muted py-4">
                 <i class="bi bi-chat-dots"></i>
@@ -18,8 +19,19 @@
         <!-- チャット入力エリア -->
         <div class="chat-input-area" style="padding: 10px; border-top: 1px solid #ddd; background: #f9f9f9;">
             {% if user.is_authenticated %}
+                <!-- リアクションボタン -->
+                <div class="reaction-buttons-area mb-2" id="reaction-buttons-area" style="display: none;">
+                    <small class="text-muted me-2">リアクション:</small>
+                    <div class="d-inline-flex gap-1" id="reaction-buttons">
+                        <!-- リアクションボタンが動的に読み込まれます -->
+                    </div>
+                </div>
+                
                 <div class="input-group">
                     <input type="text" class="form-control" id="chat-input" placeholder="メッセージを入力..." maxlength="500" autocomplete="off">
+                    <button class="btn btn-outline-secondary" type="button" id="reaction-toggle" title="リアクション">
+                        😊
+                    </button>
                     <button class="btn btn-primary" type="button" id="send-chat" disabled>
                         <i class="bi bi-send"></i>
                     </button>
@@ -38,6 +50,9 @@
 <!-- チャット機能JavaScript -->
 <script>
 let chatSocket = null;
+let reactionSocket = null;
+let availableReactions = [];
+let reactionPanelVisible = false;
 
 function testWebSocket() {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -113,6 +128,11 @@ function initializeChat() {
                 return;
             }
             
+            if (data.type === 'reaction') {
+                showTemporaryReaction(data);
+                return;
+            }
+            
             addMessageToChat(data);
         };
         
@@ -179,18 +199,135 @@ function addMessageToChat(data) {
         
         messageElement.innerHTML = `
             <div class="d-flex justify-content-between align-items-start">
-                <div>
+                <div class="flex-grow-1">
                     <strong class="text-primary">${username}</strong>
                     <div class="message-content">${messageContent}</div>
                 </div>
                 <small class="text-muted">${timestamp}</small>
             </div>
         `;
+        
+        messageElement.dataset.messageId = data.id || Date.now();
     }
     
     messagesContainer.appendChild(messageElement);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
+
+// YouTubeLive風の一時的リアクション表示
+function showTemporaryReaction(data) {
+    const reactionArea = document.getElementById('temporary-reaction-area');
+    if (!reactionArea) return;
+    
+    const username = data.username || 'ユーザー';
+    const stampImage = data.stamp_image_url ? 
+        `<img src="${data.stamp_image_url}" alt="${data.stamp_name}" style="width: 24px; height: 24px;">` : 
+        (data.stamp_name || '❤️');
+    
+    // 一時的リアクション要素を作成
+    const reactionElement = document.createElement('div');
+    reactionElement.className = 'floating-reaction';
+    
+    // ランダムな開始位置（横方向）
+    const startX = Math.random() * 70 + 15; // 15%-85%の範囲
+    reactionElement.style.left = startX + '%';
+    
+    // ランダムな遅延とアニメーション時間
+    const delay = Math.random() * 0.5; // 0-0.5秒の遅延
+    const duration = 3 + Math.random() * 1; // 3-4秒のアニメーション
+    
+    reactionElement.style.animationDelay = delay + 's';
+    reactionElement.style.animationDuration = duration + 's';
+    
+    reactionElement.innerHTML = `
+        <div class="reaction-content d-flex align-items-center">
+            ${stampImage}
+            <small class="ms-1 text-white fw-bold" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.7);">${username}</small>
+        </div>
+    `;
+    
+    reactionArea.appendChild(reactionElement);
+    
+    // アニメーション終了後に要素を削除
+    setTimeout(() => {
+        if (reactionElement.parentNode) {
+            reactionElement.parentNode.removeChild(reactionElement);
+        }
+    }, (delay + duration) * 1000 + 100);
+}
+
+// リアクションボタンを読み込み
+function loadReactionButtons() {
+    fetch('/api/chat/stamps/', {
+        credentials: 'same-origin',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.stamps) {
+            availableReactions = data.stamps;
+            renderReactionButtons();
+        }
+    })
+    .catch(error => console.error('Failed to load reactions:', error));
+}
+
+// リアクションボタンを描画
+function renderReactionButtons() {
+    const buttonsContainer = document.getElementById('reaction-buttons');
+    if (!buttonsContainer) return;
+    
+    buttonsContainer.innerHTML = '';
+    
+    availableReactions.forEach(reaction => {
+        const button = document.createElement('button');
+        button.className = 'btn btn-sm btn-outline-secondary reaction-btn';
+        button.style.cssText = 'width: 36px; height: 36px; padding: 2px; border-radius: 50%;';
+        button.title = reaction.name;
+        button.onclick = () => sendReaction(reaction);
+        
+        if (reaction.image_url) {
+            button.innerHTML = `<img src="${reaction.image_url}" alt="${reaction.name}" style="width: 24px; height: 24px;">`;
+        } else {
+            button.innerHTML = reaction.name;
+        }
+        
+        buttonsContainer.appendChild(button);
+    });
+}
+
+// リアクション送信
+function sendReaction(reaction) {
+    if (!chatSocket || chatSocket.readyState !== WebSocket.OPEN) {
+        console.error('WebSocket not connected');
+        return;
+    }
+    
+    chatSocket.send(JSON.stringify({
+        'type': 'reaction',
+        'stamp_id': reaction.id,
+        'stamp_name': reaction.name,
+        'stamp_image_url': reaction.image_url
+    }));
+    
+    // リアクションパネルを隠す
+    toggleReactionPanel();
+}
+
+// リアクションパネル表示切替
+function toggleReactionPanel() {
+    const panel = document.getElementById('reaction-buttons-area');
+    if (!panel) return;
+    
+    reactionPanelVisible = !reactionPanelVisible;
+    panel.style.display = reactionPanelVisible ? 'block' : 'none';
+    
+    if (reactionPanelVisible && availableReactions.length === 0) {
+        loadReactionButtons();
+    }
+}
+
+
 
 function showChatError(error) {
     const messagesContainer = document.getElementById('chat-messages');
@@ -215,6 +352,7 @@ function loadChatHistory() {
         if (data.messages && data.messages.length > 0) {
             data.messages.forEach(message => {
                 addMessageToChat({
+                    id: message.id,
                     username: message.username,
                     message: message.message || message.content,
                     content: message.content || message.message,
@@ -240,6 +378,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const sendButton = document.getElementById('send-chat');
     if (sendButton) {
         sendButton.addEventListener('click', sendMessage);
+    }
+    
+    // リアクショントグルボタンのクリックイベント
+    const reactionToggle = document.getElementById('reaction-toggle');
+    if (reactionToggle) {
+        reactionToggle.addEventListener('click', toggleReactionPanel);
     }
     
     // Enter キーでメッセージ送信

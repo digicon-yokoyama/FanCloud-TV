@@ -310,10 +310,118 @@ chatSocket.onmessage = function(e) {
 - エラー率の追跡
 - レスポンスタイムの測定
 
+## ⚡ YouTubeLive風リアクションシステム
+
+### リアクション機能概要
+
+FanCloud TVでは、YouTubeLive風の一時的リアクション表示システムを実装しています。
+
+### リアクションデータフロー
+
+```
+[視聴者]
+    │
+    ├── 1. リアクションボタンクリック
+    │      {
+    │        "type": "reaction",
+    │        "stamp_id": 1,
+    │        "stamp_name": ":smile:",
+    │        "stamp_image_url": "/media/stamps/01_smile.svg"
+    │      }
+    │
+    └──→ [ChatConsumer.handle_reaction]
+            │
+            ├── 2. 権限確認・認証チェック
+            │
+            ├── 3. 分析用データ保存（PostgreSQL）
+            │      - streaming_streamreaction テーブル
+            │      - localhostスキーマ内（テナント固有）
+            │
+            └── 4. 一時的リアクション配信（Redis）
+                    │
+                    ├──→ [受信者A] → 3秒間のフローティング表示
+                    ├──→ [受信者B] → 3秒間のフローティング表示
+                    └──→ [送信者] → 3秒間のフローティング表示
+```
+
+### リアクションデータベース構造
+
+```sql
+-- PostgreSQL: localhost スキーマ（テナント固有）
+
+-- ストリームリアクションテーブル
+CREATE TABLE streaming_streamreaction (
+    id SERIAL PRIMARY KEY,
+    stream_id INTEGER REFERENCES streaming_stream(id) NOT NULL,
+    user_id INTEGER REFERENCES accounts_user(id) NOT NULL,
+    stamp_id INTEGER REFERENCES chat_chatstamp(id) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- インデックス
+CREATE INDEX streaming_s_stream_0c7fc7_idx ON streaming_streamreaction(stream_id, created_at DESC);
+CREATE INDEX streaming_s_stamp_i_26798f_idx ON streaming_streamreaction(stamp_id, created_at DESC);
+```
+
+### リアクション表示の特徴
+
+1. **一時的表示**: チャット履歴には残らず、3-4秒で消える
+2. **フローティング**: チャットエリア上部で上方向にアニメーション
+3. **リアルタイム**: WebSocketによる即座の配信
+4. **分析可能**: PostgreSQLに履歴保存で後から統計分析可能
+
+### 重要な注意事項
+
+**⚠️ スキーマコンテキストの重要性**
+
+```python
+# ❌ 間違い: publicスキーマで確認
+StreamReaction.objects.count()  
+# → django.db.utils.ProgrammingError: relation "streaming_streamreaction" does not exist
+
+# ✅ 正しい: テナントスキーマで確認
+from django_tenants.utils import get_tenant_model
+tenant = get_tenant_model().objects.get(schema_name='localhost')
+connection.set_tenant(tenant)
+StreamReaction.objects.count()  # → 正常に動作
+```
+
+**データ確認時のトラブルシューティング:**
+
+1. **"テーブルが存在しない"エラーが出た場合**:
+   - スキーマコンテキストを確認 (`connection.schema_name`)
+   - `public`スキーマではなく`localhost`スキーマに切り替え
+   - テナント固有モデルは必ずテナントスキーマ内に存在
+
+2. **データが見つからない場合**:
+   ```python
+   # 現在のスキーマ確認
+   from django.db import connection
+   print(f"現在のスキーマ: {connection.schema_name}")
+   
+   # テナントに切り替え
+   from django_tenants.utils import get_tenant_model
+   tenant = get_tenant_model().objects.get(schema_name='localhost')
+   connection.set_tenant(tenant)
+   
+   # データ確認
+   from apps.streaming.models import StreamReaction
+   print(f"リアクション数: {StreamReaction.objects.count()}")
+   ```
+
+### 利用可能なスタンプ
+
+- `:smile:` - 01_smile.svg
+- `:surprise:` - 02_surprise.svg  
+- `:cry:` - 03_cry.svg
+- `:love:` - 04_love.svg
+- `:scream:` - 05_scream.svg
+- `:angry:` - 06_angry.svg
+
 ## 🚀 今後の拡張予定
 
 - [ ] メッセージの編集・削除機能
-- [ ] リアクション（絵文字）機能
+- [x] ~~リアクション（絵文字）機能~~ → **実装完了**（YouTubeLive風）
 - [ ] メンション機能
 - [ ] メッセージの検索機能
 - [ ] モデレーション強化（自動フィルタリング）
@@ -324,5 +432,5 @@ chatSocket.onmessage = function(e) {
 ---
 
 **作成日**: 2025-09-01  
-**最終更新**: 2025-09-01  
-**バージョン**: 1.0.0
+**最終更新**: 2025-09-03  
+**バージョン**: 1.1.0

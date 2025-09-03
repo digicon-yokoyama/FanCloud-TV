@@ -208,3 +208,21 @@ class StreamViewer(models.Model):
     def __str__(self):
         user_info = self.user.username if self.user else self.ip_address
         return f"{user_info} viewing {self.stream.title}"
+
+
+class StreamReaction(models.Model):
+    """YouTubeLive風のリアルタイムリアクション（統計・分析用）"""
+    stream = models.ForeignKey(Stream, on_delete=models.CASCADE, related_name='reactions')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    stamp = models.ForeignKey('chat.ChatStamp', on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['stream', '-created_at']),
+            models.Index(fields=['stamp', '-created_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.user.username} reacted {self.stamp.name} on {self.stream.title}"
