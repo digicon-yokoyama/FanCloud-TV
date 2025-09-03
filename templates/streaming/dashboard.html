@@ -6,7 +6,7 @@
 {% block extra_css %}
 <style>
 :root {
-    --youtube-red: #ff0000;
+    --brand-red: #ff0000;
     --light-bg: #f9f9f9;
     --card-bg: #ffffff;
     --border-color: #e0e0e0;
@@ -15,7 +15,7 @@
     --hover-bg: #f5f5f5;
 }
 
-.youtube-dashboard {
+.streaming-dashboard {
     background: var(--light-bg);
     min-height: calc(100vh - 76px);
     color: var(--text-primary);
@@ -59,7 +59,7 @@
 }
 
 .status-created { background: #2196f3; }
-.status-live { background: var(--youtube-red); }
+.status-live { background: var(--brand-red); }
 .status-ended { background: #666; }
 .status-error { background: #ff9800; }
 
@@ -150,7 +150,7 @@
 .live-indicator {
     width: 8px;
     height: 8px;
-    background: var(--youtube-red);
+    background: var(--brand-red);
     border-radius: 50%;
     animation: pulse 2s infinite;
 }
@@ -232,7 +232,7 @@
     border-left: none;
 }
 
-.btn-youtube {
+.btn-brand {
     background: #2196f3;
     border-color: #2196f3;
     color: white;
@@ -242,12 +242,12 @@
     transition: background-color 0.2s;
 }
 
-.btn-youtube:hover {
+.btn-brand:hover {
     background: #1976d2;
     color: white;
 }
 
-.btn-youtube-outline {
+.btn-brand-outline {
     background: transparent;
     border: 1px solid var(--border-color);
     color: var(--text-primary);
@@ -257,15 +257,15 @@
     transition: all 0.2s;
 }
 
-.btn-youtube-outline:hover {
+.btn-brand-outline:hover {
     background: var(--hover-bg);
     color: var(--text-primary);
     border-color: var(--text-secondary);
 }
 
-.btn-youtube-red {
-    background: var(--youtube-red);
-    border-color: var(--youtube-red);
+.btn-brand-red {
+    background: var(--brand-red);
+    border-color: var(--brand-red);
     color: white;
     padding: 12px 24px;
     border-radius: 8px;
@@ -274,7 +274,7 @@
     transition: background-color 0.2s;
 }
 
-.btn-youtube-red:hover {
+.btn-brand-red:hover {
     background: #cc0000;
     color: white;
 }
@@ -422,12 +422,12 @@
 }
 
 @media (max-width: 768px) {
-    .youtube-dashboard .row {
+    .streaming-dashboard .row {
         flex-direction: column;
     }
     
-    .youtube-dashboard .col-lg-7,
-    .youtube-dashboard .col-lg-5 {
+    .streaming-dashboard .col-lg-7,
+    .streaming-dashboard .col-lg-5 {
         width: 100%;
         margin-bottom: 16px;
     }
@@ -492,7 +492,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="youtube-dashboard">
+<div class="streaming-dashboard">
     <div class="container-fluid">
         <div class="row">
             <!-- Left Column: Preview -->
@@ -535,7 +535,7 @@
                     <div class="settings-header">
                         <div class="d-flex justify-content-between align-items-center">
                             <h5 style="margin: 0;">{{ stream.title }}</h5>
-                            <button class="btn btn-youtube-outline btn-sm" onclick="toggleEditMode()">編集</button>
+                            <button class="btn btn-brand-outline btn-sm" onclick="toggleEditMode()">編集</button>
                         </div>
                         <div style="margin-top: 8px; color: var(--text-secondary); font-size: 14px;">
                             カテゴリ: {{ stream.category.name|default:"未設定" }}
@@ -559,14 +559,14 @@
                             {% if stream.status == 'created' %}
                                 <form method="post" action="{% url 'streaming:start_stream' stream.stream_id %}" style="flex: 1;">
                                     {% csrf_token %}
-                                    <button type="submit" class="btn btn-youtube-red w-100">
+                                    <button type="submit" class="btn btn-brand-red w-100">
                                         <i class="bi bi-play-circle-fill me-2"></i>配信を開始
                                     </button>
                                 </form>
                             {% elif stream.status == 'live' %}
                                 <form method="post" action="{% url 'streaming:end_stream' stream.stream_id %}" style="flex: 1;">
                                     {% csrf_token %}
-                                    <button type="submit" class="btn btn-youtube-red w-100">
+                                    <button type="submit" class="btn btn-brand-red w-100">
                                         <i class="bi bi-stop-circle-fill me-2"></i>配信を終了
                                     </button>
                                 </form>
@@ -574,18 +574,18 @@
                             
                             {% if stream.status == 'live' %}
                                 <a href="{% url 'streaming:watch' stream.stream_id %}" target="_blank" 
-                                   class="btn btn-youtube-outline">
+                                   class="btn btn-brand-outline">
                                     <i class="bi bi-eye me-1"></i>視聴
                                 </a>
                             {% endif %}
                         </div>
 
                         <div class="action-buttons">
-                            <a href="{% url 'streaming:my_streams' %}" class="btn btn-youtube-outline">
+                            <a href="{% url 'streaming:my_streams' %}" class="btn btn-brand-outline">
                                 <i class="bi bi-arrow-left me-2"></i>配信一覧に戻る
                             </a>
                             {% if stream.status == 'ended' %}
-                                <button class="btn btn-youtube-outline" onclick="deleteStream()">
+                                <button class="btn btn-brand-outline" onclick="deleteStream()">
                                     <i class="bi bi-trash me-1"></i>削除
                                 </button>
                             {% endif %}
@@ -617,7 +617,7 @@
                                 <label class="form-label">ストリームURL</label>
                                 <div class="input-group">
                                     <input type="text" class="form-control" value="{{ stream.ingest_url }}" readonly>
-                                    <button class="btn btn-youtube-outline" type="button" onclick="copyToClipboard('{{ stream.ingest_url }}')">
+                                    <button class="btn btn-brand-outline" type="button" onclick="copyToClipboard('{{ stream.ingest_url }}')">
                                         <i class="bi bi-clipboard"></i>
                                     </button>
                                 </div>
@@ -631,10 +631,10 @@
                                 <div class="input-group">
                                     <input type="password" class="form-control" id="stream-key" 
                                            value="{{ stream.stream_key }}" readonly>
-                                    <button class="btn btn-youtube-outline" type="button" id="toggle-key">
+                                    <button class="btn btn-brand-outline" type="button" id="toggle-key">
                                         <i class="bi bi-eye"></i>
                                     </button>
-                                    <button class="btn btn-youtube-outline" type="button" onclick="copyToClipboard('{{ stream.stream_key }}')">
+                                    <button class="btn btn-brand-outline" type="button" onclick="copyToClipboard('{{ stream.stream_key }}')">
                                         <i class="bi bi-clipboard"></i>
                                     </button>
                                 </div>
@@ -655,7 +655,7 @@
                                         <label class="form-label">バックアップストリームURL</label>
                                         <div class="input-group">
                                             <input type="text" class="form-control" value="{{ stream.backup_ingest_url|default:'rtmp://backup.example.com/live' }}" readonly>
-                                            <button class="btn btn-youtube-outline" type="button" onclick="copyToClipboard('{{ stream.backup_ingest_url|default:'' }}')">
+                                            <button class="btn btn-brand-outline" type="button" onclick="copyToClipboard('{{ stream.backup_ingest_url|default:'' }}')">
                                                 <i class="bi bi-clipboard"></i>
                                             </button>
                                         </div>
@@ -669,10 +669,10 @@
                                         <div class="input-group">
                                             <input type="password" class="form-control" id="backup-stream-key" 
                                                    value="{{ stream.backup_stream_key|default:'backup-key-placeholder' }}" readonly>
-                                            <button class="btn btn-youtube-outline" type="button" id="toggle-backup-key">
+                                            <button class="btn btn-brand-outline" type="button" id="toggle-backup-key">
                                                 <i class="bi bi-eye"></i>
                                             </button>
-                                            <button class="btn btn-youtube-outline" type="button" onclick="copyToClipboard('{{ stream.backup_stream_key|default:'' }}')">
+                                            <button class="btn btn-brand-outline" type="button" onclick="copyToClipboard('{{ stream.backup_stream_key|default:'' }}')">
                                                 <i class="bi bi-clipboard"></i>
                                             </button>
                                         </div>
@@ -788,10 +788,10 @@
                                     <input type="text" class="form-control" id="obs-overlay-url-normal" 
                                            value="{% if stream.obs_overlay_token %}{{ stream.get_obs_overlay_url }}?anonymous=false{% else %}URLを生成してください{% endif %}" 
                                            readonly>
-                                    <button class="btn btn-youtube-outline" type="button" onclick="copyToClipboard(document.getElementById('obs-overlay-url-normal').value)">
+                                    <button class="btn btn-brand-outline" type="button" onclick="copyToClipboard(document.getElementById('obs-overlay-url-normal').value)">
                                         <i class="bi bi-clipboard"></i>
                                     </button>
-                                    <button class="btn btn-youtube-outline" type="button" onclick="testObsOverlay('normal')" 
+                                    <button class="btn btn-brand-outline" type="button" onclick="testObsOverlay('normal')" 
                                             {% if not stream.obs_overlay_token %}disabled{% endif %}>
                                         <i class="bi bi-eye"></i>
                                     </button>
@@ -808,10 +808,10 @@
                                     <input type="text" class="form-control" id="obs-overlay-url-anonymous" 
                                            value="{% if stream.obs_overlay_token %}{{ stream.get_obs_overlay_url }}?anonymous=true{% else %}URLを生成してください{% endif %}" 
                                            readonly>
-                                    <button class="btn btn-youtube-outline" type="button" onclick="copyToClipboard(document.getElementById('obs-overlay-url-anonymous').value)">
+                                    <button class="btn btn-brand-outline" type="button" onclick="copyToClipboard(document.getElementById('obs-overlay-url-anonymous').value)">
                                         <i class="bi bi-clipboard"></i>
                                     </button>
-                                    <button class="btn btn-youtube-outline" type="button" onclick="testObsOverlay('anonymous')" 
+                                    <button class="btn btn-brand-outline" type="button" onclick="testObsOverlay('anonymous')" 
                                             {% if not stream.obs_overlay_token %}disabled{% endif %}>
                                         <i class="bi bi-eye"></i>
                                     </button>
@@ -821,7 +821,7 @@
                             
                             <div class="d-flex gap-2 align-items-center mt-3">
                                 {% if not stream.obs_overlay_token %}
-                                <button class="btn btn-youtube" onclick="generateObsToken()">
+                                <button class="btn btn-brand" onclick="generateObsToken()">
                                     🔗 URL生成
                                 </button>
                                 {% else %}

@@ -10,15 +10,24 @@ def user_permissions(request):
     Usage in templates: {% if perms.can_stream %}...{% endif %}
     """
     if request.user.is_authenticated:
+        # Get unread notification count
+        try:
+            from apps.notifications.services import NotificationService
+            unread_count = NotificationService.get_unread_count(request.user)
+        except:
+            unread_count = 0
+        
         return {
             'perms': get_user_permissions(request.user),
             'user_role': request.user.role,
             'user_membership': request.user.membership,
+            'unread_notification_count': unread_count,
         }
     return {
         'perms': {},
         'user_role': None,
         'user_membership': None,
+        'unread_notification_count': 0,
     }
 
 

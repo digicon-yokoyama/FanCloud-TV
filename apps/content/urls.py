@@ -9,6 +9,11 @@ urlpatterns = [
     path('search/', views.search_videos, name='search'),
     path('watch/<int:video_id>/', views.watch_video, name='watch'),
     
+    # User library
+    path('history/', views.history, name='history'),
+    path('favorites/', views.favorites, name='favorites'),
+    path('playlists/', views.playlists, name='playlists'),
+    
     # Video upload and management
     path('upload/', views.upload_video, name='upload_video'),
     path('manage/', views.manage_videos, name='manage_videos'),

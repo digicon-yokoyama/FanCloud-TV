@@ -250,7 +250,7 @@ class StreamViewer(models.Model):
 
 
 class StreamReaction(models.Model):
-    """YouTubeLive風のリアルタイムリアクション（統計・分析用）"""
+    """リアルタイムリアクション（統計・分析用）"""
     stream = models.ForeignKey(Stream, on_delete=models.CASCADE, related_name='reactions')
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     stamp = models.ForeignKey('chat.ChatStamp', on_delete=models.CASCADE)

@@ -220,6 +220,35 @@
             .main-content {
                 margin-left: 0;
             }
+            
+            /* Mobile navbar adjustments */
+            .navbar .container-fluid {
+                flex-wrap: nowrap;
+            }
+            
+            .navbar-brand {
+                font-size: 1rem;
+                flex-shrink: 0;
+            }
+            
+            /* Hide search on very small screens */
+            .navbar form {
+                display: none !important;
+            }
+            
+            /* Ensure user menu stays visible */
+            .navbar .d-flex:last-child {
+                flex-shrink: 0;
+            }
+        }
+        
+        @media (min-width: 576px) and (max-width: 768px) {
+            /* Show search on slightly larger mobile screens */
+            .navbar form {
+                display: flex !important;
+                max-width: 200px;
+                margin: 0 auto;
+            }
         }
     </style>
     
@@ -255,7 +284,7 @@
                     <div class="dropdown me-2">
                         <button class="btn btn-link position-relative" type="button" data-bs-toggle="dropdown">
                             <i class="bi bi-bell fs-5"></i>
-                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="notification-count" style="font-size: 0.6rem;">0</span>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="notification-count" style="font-size: 0.6rem;{% if unread_notification_count == 0 %} display: none;{% endif %}">{{ unread_notification_count }}</span>
                         </button>
                         <div class="dropdown-menu dropdown-menu-end" style="width: 350px; max-height: 400px; overflow-y: auto;">
                             <div class="dropdown-header d-flex justify-content-between align-items-center">
@@ -433,19 +462,19 @@
                         </h6>
                         <ul class="nav nav-pills flex-column">
                             <li class="nav-item">
-                                <a class="nav-link" href="#">
+                                <a class="nav-link" href="{% url 'content:history' %}">
                                     <i class="bi bi-clock-history me-2"></i>
                                     履歴
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="#">
+                                <a class="nav-link" href="{% url 'content:favorites' %}">
                                     <i class="bi bi-heart me-2"></i>
                                     お気に入り
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="#">
+                                <a class="nav-link" href="{% url 'content:playlists' %}">
                                     <i class="bi bi-collection me-2"></i>
                                     プレイリスト
                                 </a>
@@ -476,19 +505,35 @@
         });
         
         // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', function(e) {
+            const sidebar = document.getElementById('sidebar');
+            const toggle = document.getElementById('sidebar-toggle');
+            
+            if (window.innerWidth <= 768 && 
+                !sidebar.contains(e.target) && 
+                !toggle.contains(e.target) && 
+                sidebar.classList.contains('show')) {
+                sidebar.classList.remove('show');
+            }
+        });
         
         // Notification functionality
         {% if user.is_authenticated %}
         function loadNotifications() {
             fetch('/api/notifications/api/unread/')
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
             .then(data => {
                 const countElement = document.getElementById('notification-count');
                 const listElement = document.getElementById('notification-list');
                 
                 // Update count
-                countElement.textContent = data.unread_count;
-                countElement.style.display = data.unread_count > 0 ? 'block' : 'none';
+                countElement.textContent = data.unread_count || 0;
+                countElement.style.display = (data.unread_count && data.unread_count > 0) ? 'block' : 'none';
                 
                 // Update list
                 if (data.notifications.length === 0) {
@@ -551,17 +596,6 @@
         loadNotifications();
         setInterval(loadNotifications, 60000); // Check every minute
         {% endif %}
-        document.addEventListener('click', function(e) {
-            const sidebar = document.getElementById('sidebar');
-            const toggle = document.getElementById('sidebar-toggle');
-            
-            if (window.innerWidth <= 768 && 
-                !sidebar.contains(e.target) && 
-                !toggle.contains(e.target) && 
-                sidebar.classList.contains('show')) {
-                sidebar.classList.remove('show');
-            }
-        });
     </script>
     
     {% block extra_js %}{% endblock %}

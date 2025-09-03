@@ -532,3 +532,49 @@ def search_videos(request):
     }
     
     return render(request, 'content/search.html', context)
+
+
+@login_required
+def history(request):
+    """User's viewing history."""
+    # Placeholder for viewing history - would need to implement WatchHistory model
+    context = {
+        'videos': [],
+        'title': '視聴履歴',
+        'empty_message': '視聴履歴はありません'
+    }
+    return render(request, 'content/library_page.html', context)
+
+
+@login_required 
+def favorites(request):
+    """User's favorite videos."""
+    # Get liked videos as favorites
+    liked_videos = Video.objects.filter(
+        likes__user=request.user,
+        likes__is_like=True,
+        status='ready'
+    ).order_by('-likes__created_at')
+    
+    paginator = Paginator(liked_videos, 12)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'videos': page_obj,
+        'title': 'お気に入り',
+        'empty_message': 'お気に入りの動画はありません'
+    }
+    return render(request, 'content/library_page.html', context)
+
+
+@login_required
+def playlists(request):
+    """User's playlists."""
+    # Placeholder for playlists - would need to implement Playlist model
+    context = {
+        'playlists': [],
+        'title': 'プレイリスト',
+        'empty_message': 'プレイリストはありません'
+    }
+    return render(request, 'content/playlists.html', context)

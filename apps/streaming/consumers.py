@@ -9,7 +9,7 @@ from django.contrib.auth.models import AnonymousUser
 
 class StreamReactionConsumer(AsyncWebsocketConsumer):
     """
-    YouTubeLive風のリアルタイムリアクション機能
+    リアルタイムリアクション機能
     配信画面上を流れるリアクションエフェクト用
     """
     
