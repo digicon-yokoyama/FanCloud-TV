@@ -33,7 +33,11 @@
       "Bash(pip3 install:*)",
       "Bash(git add:*)",
       "Read(/var/folders/rn/d61zm0pj551342190c1qzvpw0000gn/T/TemporaryItems/NSIRD_screencaptureui_LqUT4l/**)",
-      "Read(/var/folders/rn/d61zm0pj551342190c1qzvpw0000gn/T/TemporaryItems/NSIRD_screencaptureui_YvdWN0/**)"
+      "Read(/var/folders/rn/d61zm0pj551342190c1qzvpw0000gn/T/TemporaryItems/NSIRD_screencaptureui_YvdWN0/**)",
+      "Bash(chmod:*)",
+      "Read(/var/folders/rn/d61zm0pj551342190c1qzvpw0000gn/T/TemporaryItems/NSIRD_screencaptureui_cwlqe2/**)",
+      "Bash(sed:*)",
+      "Read(/var/folders/rn/d61zm0pj551342190c1qzvpw0000gn/T/TemporaryItems/NSIRD_screencaptureui_QFlANk/**)"
     ],
     "deny": [],
     "ask": []

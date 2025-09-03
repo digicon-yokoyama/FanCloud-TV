@@ -1,0 +1,350 @@
+{% extends 'base/base.html' %}
+{% load humanize %}
+
+{% block title %}{{ channel_user.username }} - チャンネル{% endblock %}
+
+{% block extra_css %}
+<style>
+.channel-header {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: white;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+}
+
+.channel-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 3px solid white;
+}
+
+.stats-card {
+    background: white;
+    border: 1px solid #e5e5e5;
+    border-radius: 8px;
+    text-align: center;
+    padding: 1rem;
+}
+
+.stats-number {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #007bff;
+}
+
+.follow-btn {
+    border-radius: 20px;
+    font-weight: 500;
+    padding: 8px 20px;
+}
+
+.tab-content {
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e5e5e5;
+}
+
+.nav-tabs {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.nav-tabs .nav-link {
+    border: none;
+    border-radius: 8px 8px 0 0;
+    color: #666;
+    font-weight: 500;
+}
+
+.nav-tabs .nav-link.active {
+    background: white;
+    color: #007bff;
+    border: 1px solid #e5e5e5;
+    border-bottom: 1px solid white;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Channel Header -->
+    <div class="channel-header p-4">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <div class="d-flex align-items-center">
+                    {% if channel_user.avatar %}
+                        <img src="{{ channel_user.avatar.url }}" class="channel-avatar me-3" alt="{{ channel_user.username }}">
+                    {% else %}
+                        <div class="channel-avatar me-3 d-flex align-items-center justify-content-center bg-light text-dark">
+                            <i class="bi bi-person-fill" style="font-size: 2rem;"></i>
+                        </div>
+                    {% endif %}
+                    <div>
+                        <h2 class="mb-0">{{ channel_user.username }}</h2>
+                        {% if channel_user.first_name or channel_user.last_name %}
+                            <p class="mb-1 opacity-75">{{ channel_user.first_name }} {{ channel_user.last_name }}</p>
+                        {% endif %}
+                        <p class="mb-0 opacity-75">
+                            <i class="bi bi-people me-1"></i>{{ stats.followers_count|intcomma }} フォロワー
+                            <span class="mx-2">•</span>
+                            <i class="bi bi-eye me-1"></i>{{ stats.total_views|intcomma }} 回視聴
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 text-md-end">
+                {% if user.is_authenticated and user != channel_user %}
+                    <button id="follow-btn" 
+                            class="btn {% if is_following %}btn-outline-light{% else %}btn-light{% endif %} follow-btn"
+                            data-user-id="{{ channel_user.id }}">
+                        <i class="bi bi-{% if is_following %}person-check{% else %}person-plus{% endif %} me-1"></i>
+                        {% if is_following %}フォロー中{% else %}フォローする{% endif %}
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+        
+        {% if profile.bio %}
+        <div class="mt-3">
+            <p class="mb-0">{{ profile.bio }}</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Statistics -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3 col-6">
+            <div class="stats-card">
+                <div class="stats-number">{{ stats.total_videos }}</div>
+                <div class="text-muted small">動画</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stats-card">
+                <div class="stats-number">{{ stats.followers_count|intcomma }}</div>
+                <div class="text-muted small">フォロワー</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stats-card">
+                <div class="stats-number">{{ stats.following_count|intcomma }}</div>
+                <div class="text-muted small">フォロー中</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stats-card">
+                <div class="stats-number">{{ stats.total_views|intcomma }}</div>
+                <div class="text-muted small">総視聴回数</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content Tabs -->
+    <ul class="nav nav-tabs" id="channelTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="videos-tab" data-bs-toggle="tab" data-bs-target="#videos" type="button" role="tab">
+                <i class="bi bi-play-circle me-2"></i>動画
+            </button>
+        </li>
+        {% if recent_streams %}
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="streams-tab" data-bs-toggle="tab" data-bs-target="#streams" type="button" role="tab">
+                <i class="bi bi-broadcast me-2"></i>配信履歴
+            </button>
+        </li>
+        {% endif %}
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="about-tab" data-bs-toggle="tab" data-bs-target="#about" type="button" role="tab">
+                <i class="bi bi-info-circle me-2"></i>概要
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content p-4" id="channelTabContent">
+        <!-- Videos Tab -->
+        <div class="tab-pane fade show active" id="videos" role="tabpanel">
+            {% if videos %}
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-4">
+                    {% for video in videos %}
+                        {% include 'partials/video_card.html' %}
+                    {% endfor %}
+                </div>
+                
+                <!-- Pagination -->
+                {% if videos.has_other_pages %}
+                <div class="d-flex justify-content-center mt-4">
+                    <nav>
+                        <ul class="pagination">
+                            {% if videos.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ videos.previous_page_number }}">&laquo; 前へ</a>
+                                </li>
+                            {% endif %}
+                            
+                            {% for num in videos.paginator.page_range %}
+                                {% if videos.number == num %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                {% elif num > videos.number|add:'-3' and num < videos.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if videos.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ videos.next_page_number }}">次へ &raquo;</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-play-circle display-1 text-muted"></i>
+                    <h4 class="mt-3 text-muted">動画がありません</h4>
+                    <p class="text-muted">まだ動画がアップロードされていません。</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Streams Tab -->
+        {% if recent_streams %}
+        <div class="tab-pane fade" id="streams" role="tabpanel">
+            <div class="list-group list-group-flush">
+                {% for stream in recent_streams %}
+                <div class="list-group-item d-flex justify-content-between align-items-start">
+                    <div class="ms-2 me-auto">
+                        <div class="fw-bold">{{ stream.title }}</div>
+                        <small class="text-muted">
+                            <i class="bi bi-calendar me-1"></i>{{ stream.created_at|date:"Y年m月d日 H:i" }}
+                            {% if stream.status == 'ended' %}
+                                <span class="mx-2">•</span>
+                                <i class="bi bi-clock me-1"></i>{{ stream.duration|default:"N/A" }}
+                            {% endif %}
+                        </small>
+                        {% if stream.description %}
+                            <p class="mb-0 mt-1 small text-muted">{{ stream.description|truncatechars:100 }}</p>
+                        {% endif %}
+                    </div>
+                    <span class="badge bg-{% if stream.status == 'live' %}success{% elif stream.status == 'ended' %}secondary{% else %}primary{% endif %} rounded-pill">
+                        {{ stream.get_status_display }}
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- About Tab -->
+        <div class="tab-pane fade" id="about" role="tabpanel">
+            <div class="row">
+                <div class="col-md-8">
+                    <h5>概要</h5>
+                    {% if profile.bio %}
+                        <p>{{ profile.bio|linebreaks }}</p>
+                    {% else %}
+                        <p class="text-muted">自己紹介がありません。</p>
+                    {% endif %}
+                    
+                    <h6 class="mt-4">統計情報</h6>
+                    <ul class="list-unstyled">
+                        <li><i class="bi bi-calendar me-2"></i>参加日: {{ channel_user.date_joined|date:"Y年m月d日" }}</li>
+                        <li><i class="bi bi-eye me-2"></i>総視聴回数: {{ stats.total_views|intcomma }}</li>
+                        <li><i class="bi bi-play-circle me-2"></i>動画数: {{ stats.total_videos }}</li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    {% if profile.website or profile.twitter or profile.youtube %}
+                    <h6>リンク</h6>
+                    <ul class="list-unstyled">
+                        {% if profile.website %}
+                            <li>
+                                <a href="{{ profile.website }}" target="_blank" class="text-decoration-none">
+                                    <i class="bi bi-link-45deg me-2"></i>ウェブサイト
+                                </a>
+                            </li>
+                        {% endif %}
+                        {% if profile.twitter %}
+                            <li>
+                                <a href="https://twitter.com/{{ profile.twitter }}" target="_blank" class="text-decoration-none">
+                                    <i class="bi bi-twitter me-2"></i>Twitter
+                                </a>
+                            </li>
+                        {% endif %}
+                        {% if profile.youtube %}
+                            <li>
+                                <a href="https://youtube.com/{{ profile.youtube }}" target="_blank" class="text-decoration-none">
+                                    <i class="bi bi-youtube me-2"></i>YouTube
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const followBtn = document.getElementById('follow-btn');
+    
+    if (followBtn) {
+        followBtn.addEventListener('click', function() {
+            const userId = this.dataset.userId;
+            const isFollowing = this.classList.contains('btn-outline-light');
+            
+            // Disable button during request
+            this.disabled = true;
+            
+            fetch(`/accounts/follow/${userId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'followed') {
+                    this.className = 'btn btn-outline-light follow-btn';
+                    this.innerHTML = '<i class="bi bi-person-check me-1"></i>フォロー中';
+                } else if (data.status === 'unfollowed') {
+                    this.className = 'btn btn-light follow-btn';
+                    this.innerHTML = '<i class="bi bi-person-plus me-1"></i>フォローする';
+                }
+                
+                // Update follower count in stats
+                const followerStats = document.querySelectorAll('.stats-number');
+                if (followerStats[1]) {
+                    followerStats[1].textContent = data.followers_count.toLocaleString();
+                }
+                
+                // Show message
+                if (data.message) {
+                    // You can implement a toast notification here
+                    console.log(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            })
+            .finally(() => {
+                this.disabled = false;
+            });
+        });
+    }
+});
+</script>
+
+<!-- Add CSRF token for AJAX requests -->
+{% csrf_token %}
+{% endblock %}

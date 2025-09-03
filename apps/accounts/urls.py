@@ -10,6 +10,12 @@ urlpatterns = [
     path('profile/', views.profile, name='profile'),
     path('settings/', views.settings, name='settings'),
     
+    # Follow system
+    path('follow/<int:user_id>/', views.follow_user, name='follow_user'),
+    path('channel/<str:username>/', views.user_channel, name='channel'),
+    path('following/', views.following_list, name='following'),
+    path('followers/', views.followers_list, name='followers'),
+    
     # Admin URLs
     path('admin/', include([
         path('users/', views_admin.user_management, name='admin_users'),

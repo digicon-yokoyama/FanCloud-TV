@@ -1,0 +1,416 @@
+{% extends "base/base.html" %}
+{% load static %}
+
+{% block title %}マイ動画 - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.video-card {
+    transition: all 0.3s ease;
+    border: 1px solid #dee2e6;
+}
+
+.video-card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.video-thumbnail {
+    position: relative;
+    width: 100%;
+    height: 200px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.video-thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.video-duration {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    background: rgba(0,0,0,0.8);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+}
+
+.status-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    padding: 2px 8px;
+}
+
+.status-uploading { background: #ffc107; color: #000; }
+.status-processing { background: #17a2b8; color: white; }
+.status-ready { background: #28a745; color: white; }
+.status-failed { background: #dc3545; color: white; }
+.status-archived { background: #6c757d; color: white; }
+
+.stats-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+}
+
+.processing-progress {
+    margin-top: 10px;
+}
+
+.video-actions {
+    display: flex;
+    gap: 5px;
+    justify-content: flex-end;
+    margin-top: 10px;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #6c757d;
+}
+
+.empty-state i {
+    font-size: 64px;
+    margin-bottom: 20px;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-refresh processing videos
+    const processingVideos = document.querySelectorAll('[data-video-id]');
+    
+    processingVideos.forEach(element => {
+        const videoId = element.dataset.videoId;
+        const status = element.dataset.status;
+        
+        if (status === 'processing') {
+            checkProcessingStatus(videoId, element);
+        }
+    });
+    
+    function checkProcessingStatus(videoId, element) {
+        fetch(`/content/api/video/${videoId}/status/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.ready) {
+                    // Refresh page when processing is complete
+                    location.reload();
+                } else if (data.status === 'processing') {
+                    // Update progress bar
+                    const progressBar = element.querySelector('.progress-bar');
+                    if (progressBar) {
+                        progressBar.style.width = data.progress + '%';
+                        progressBar.textContent = data.progress + '%';
+                    }
+                    
+                    // Check again in 2 seconds
+                    setTimeout(() => checkProcessingStatus(videoId, element), 2000);
+                }
+            })
+            .catch(error => {
+                console.error('Error checking video status:', error);
+                // Retry in 5 seconds on error
+                setTimeout(() => checkProcessingStatus(videoId, element), 5000);
+            });
+    }
+    
+    // Delete confirmation
+    document.querySelectorAll('.delete-video').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const videoTitle = this.dataset.videoTitle;
+            
+            if (confirm(`「${videoTitle}」を削除してよろしいですか？\n\nこの操作は取り消せません。`)) {
+                window.location.href = this.href;
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="bi bi-collection-play me-2"></i>マイ動画
+        </h2>
+        <a href="{% url 'content:upload_video' %}" class="btn btn-primary">
+            <i class="bi bi-cloud-upload me-1"></i>新しい動画をアップロード
+        </a>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 col-sm-6">
+            <div class="card stats-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div>
+                            <h4 class="mb-0">{{ stats.total_videos }}</h4>
+                            <small>総動画数</small>
+                        </div>
+                        <i class="bi bi-collection-play ms-auto" style="font-size: 2rem; opacity: 0.5;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div>
+                            <h4 class="mb-0">{{ stats.total_views|floatformat:0 }}</h4>
+                            <small>総視聴回数</small>
+                        </div>
+                        <i class="bi bi-eye ms-auto" style="font-size: 2rem; opacity: 0.5;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div>
+                            <h4 class="mb-0">{{ stats.total_likes }}</h4>
+                            <small>総いいね数</small>
+                        </div>
+                        <i class="bi bi-heart ms-auto" style="font-size: 2rem; opacity: 0.5;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div>
+                            <h4 class="mb-0">{{ stats.processing }}</h4>
+                            <small>処理中</small>
+                        </div>
+                        <i class="bi bi-gear ms-auto" style="font-size: 2rem; opacity: 0.5;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">ステータス</label>
+                    <select name="status" class="form-select" onchange="this.form.submit()">
+                        <option value="">すべて</option>
+                        <option value="uploading" {% if status_filter == 'uploading' %}selected{% endif %}>アップロード中</option>
+                        <option value="processing" {% if status_filter == 'processing' %}selected{% endif %}>処理中</option>
+                        <option value="ready" {% if status_filter == 'ready' %}selected{% endif %}>公開可能</option>
+                        <option value="failed" {% if status_filter == 'failed' %}selected{% endif %}>失敗</option>
+                        <option value="archived" {% if status_filter == 'archived' %}selected{% endif %}>アーカイブ済み</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">カテゴリ</label>
+                    <select name="category" class="form-select" onchange="this.form.submit()">
+                        <option value="">すべて</option>
+                        {% for category in categories %}
+                            <option value="{{ category.id }}">{{ category.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Videos Grid -->
+    {% if videos.object_list %}
+        <div class="row">
+            {% for video in videos %}
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card video-card h-100" data-video-id="{{ video.id }}" data-status="{{ video.status }}">
+                        <!-- Thumbnail -->
+                        <div class="video-thumbnail">
+                            {% if video.thumbnail_url %}
+                                <img src="{{ video.thumbnail_url }}" alt="{{ video.title }}">
+                            {% else %}
+                                <div class="d-flex align-items-center justify-content-center h-100 bg-light">
+                                    <i class="bi bi-camera-video text-muted" style="font-size: 3rem; opacity: 0.3;"></i>
+                                </div>
+                            {% endif %}
+                            
+                            <!-- Status Badge -->
+                            <span class="status-badge status-{{ video.status }}">
+                                {% if video.status == 'uploading' %}アップロード中
+                                {% elif video.status == 'processing' %}処理中
+                                {% elif video.status == 'ready' %}公開可能
+                                {% elif video.status == 'failed' %}失敗
+                                {% elif video.status == 'archived' %}アーカイブ済み
+                                {% endif %}
+                            </span>
+                            
+                            <!-- Duration -->
+                            {% if video.duration > 0 %}
+                                <span class="video-duration">{{ video.duration_formatted }}</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="card-body d-flex flex-column">
+                            <!-- Title -->
+                            <h6 class="card-title mb-2" title="{{ video.title }}">
+                                {% if video.status == 'ready' %}
+                                    <a href="{% url 'content:watch' video.id %}" class="text-decoration-none">
+                                        {{ video.title|truncatechars:50 }}
+                                    </a>
+                                {% else %}
+                                    {{ video.title|truncatechars:50 }}
+                                {% endif %}
+                            </h6>
+
+                            <!-- Description -->
+                            {% if video.description %}
+                                <p class="card-text text-muted small mb-2">
+                                    {{ video.description|truncatechars:100 }}
+                                </p>
+                            {% endif %}
+
+                            <!-- Processing Progress -->
+                            {% if video.status == 'processing' %}
+                                <div class="processing-progress">
+                                    <div class="progress mb-2">
+                                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                             role="progressbar" style="width: {{ video.processing_progress }}%">
+                                            {{ video.processing_progress }}%
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">動画を処理中...</small>
+                                </div>
+                            {% endif %}
+
+                            <!-- Video Info -->
+                            <div class="mt-auto">
+                                <div class="row text-muted small mb-2">
+                                    <div class="col-6">
+                                        <i class="bi bi-eye me-1"></i>{{ video.view_count }}
+                                    </div>
+                                    <div class="col-6">
+                                        <i class="bi bi-heart me-1"></i>{{ video.like_count }}
+                                    </div>
+                                </div>
+                                
+                                <div class="text-muted small mb-2">
+                                    <i class="bi bi-calendar me-1"></i>{{ video.created_at|date:"Y/m/d H:i" }}
+                                </div>
+
+                                <!-- Privacy -->
+                                <div class="mb-2">
+                                    {% if video.privacy == 'public' %}
+                                        <span class="badge bg-success"><i class="bi bi-globe me-1"></i>公開</span>
+                                    {% elif video.privacy == 'unlisted' %}
+                                        <span class="badge bg-warning text-dark"><i class="bi bi-link me-1"></i>限定公開</span>
+                                    {% elif video.privacy == 'private' %}
+                                        <span class="badge bg-secondary"><i class="bi bi-lock me-1"></i>非公開</span>
+                                    {% elif video.privacy == 'premium' %}
+                                        <span class="badge bg-primary"><i class="bi bi-star me-1"></i>プレミアム限定</span>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Actions -->
+                                <div class="video-actions">
+                                    {% if video.status == 'ready' %}
+                                        <a href="{% url 'content:watch' video.id %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-play"></i>
+                                        </a>
+                                    {% endif %}
+                                    
+                                    <button class="btn btn-sm btn-outline-secondary" title="編集">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    
+                                    <a href="{% url 'content:delete_video' video.id %}" 
+                                       class="btn btn-sm btn-outline-danger delete-video"
+                                       data-video-title="{{ video.title }}"
+                                       title="削除">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if videos.has_other_pages %}
+            <nav aria-label="動画ページネーション">
+                <ul class="pagination justify-content-center">
+                    {% if videos.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1{% if status_filter %}&status={{ status_filter }}{% endif %}">最初</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ videos.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}">前へ</a>
+                        </li>
+                    {% endif %}
+
+                    {% for num in videos.paginator.page_range %}
+                        {% if videos.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > videos.number|add:'-3' and num < videos.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if status_filter %}&status={{ status_filter }}{% endif %}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if videos.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ videos.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}">次へ</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ videos.paginator.num_pages }}{% if status_filter %}&status={{ status_filter }}{% endif %}">最後</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    {% else %}
+        <!-- Empty State -->
+        <div class="empty-state">
+            <i class="bi bi-collection-play"></i>
+            <h4>動画がありません</h4>
+            <p class="mb-4">まだ動画をアップロードしていません。</p>
+            <a href="{% url 'content:upload_video' %}" class="btn btn-primary">
+                <i class="bi bi-cloud-upload me-1"></i>最初の動画をアップロード
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

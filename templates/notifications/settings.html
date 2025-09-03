@@ -1,0 +1,129 @@
+{% extends 'base/base.html' %}
+
+{% block title %}通知設定 - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="bi bi-bell me-2"></i>通知設定
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form id="settingsForm" method="post">
+                        {% csrf_token %}
+                        
+                        <h5 class="mb-3">メール通知</h5>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="email_stream_start" id="email_stream_start" {% if settings.email_stream_start %}checked{% endif %}>
+                            <label class="form-check-label" for="email_stream_start">
+                                配信開始通知
+                            </label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="email_new_video" id="email_new_video" {% if settings.email_new_video %}checked{% endif %}>
+                            <label class="form-check-label" for="email_new_video">
+                                新動画投稿通知
+                            </label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="email_new_follower" id="email_new_follower" {% if settings.email_new_follower %}checked{% endif %}>
+                            <label class="form-check-label" for="email_new_follower">
+                                新フォロワー通知
+                            </label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="email_comments" id="email_comments" {% if settings.email_comments %}checked{% endif %}>
+                            <label class="form-check-label" for="email_comments">
+                                コメント通知
+                            </label>
+                        </div>
+                        <div class="form-check mb-4">
+                            <input class="form-check-input" type="checkbox" name="email_mentions" id="email_mentions" {% if settings.email_mentions %}checked{% endif %}>
+                            <label class="form-check-label" for="email_mentions">
+                                メンション通知
+                            </label>
+                        </div>
+                        
+                        <h5 class="mb-3">プッシュ通知</h5>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="push_stream_start" id="push_stream_start" {% if settings.push_stream_start %}checked{% endif %}>
+                            <label class="form-check-label" for="push_stream_start">
+                                配信開始通知
+                            </label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="push_new_video" id="push_new_video" {% if settings.push_new_video %}checked{% endif %}>
+                            <label class="form-check-label" for="push_new_video">
+                                新動画投稿通知
+                            </label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="push_new_follower" id="push_new_follower" {% if settings.push_new_follower %}checked{% endif %}>
+                            <label class="form-check-label" for="push_new_follower">
+                                新フォロワー通知
+                            </label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="push_comments" id="push_comments" {% if settings.push_comments %}checked{% endif %}>
+                            <label class="form-check-label" for="push_comments">
+                                コメント通知
+                            </label>
+                        </div>
+                        <div class="form-check mb-4">
+                            <input class="form-check-input" type="checkbox" name="push_mentions" id="push_mentions" {% if settings.push_mentions %}checked{% endif %}>
+                            <label class="form-check-label" for="push_mentions">
+                                メンション通知
+                            </label>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">設定を保存</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('settingsForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch('', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-success alert-dismissible fade show';
+            alert.innerHTML = `
+                ${data.message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            const form = document.getElementById('settingsForm');
+            form.parentNode.insertBefore(alert, form);
+            
+            setTimeout(() => {
+                alert.remove();
+            }, 3000);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+});
+</script>
+{% endblock %}

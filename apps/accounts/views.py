@@ -1,11 +1,14 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.urls import reverse_lazy
 from django.views.generic import CreateView
 from django.contrib.auth.views import LoginView, LogoutView
-from .models import User, UserProfile
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.core.paginator import Paginator
+from .models import User, UserProfile, Follow
 from django import forms
 
 
@@ -125,3 +128,139 @@ def settings(request):
         'profile': getattr(request.user, 'profile', None),
     }
     return render(request, 'accounts/settings.html', context)
+
+
+@login_required
+@require_POST
+def follow_user(request, user_id):
+    """Follow/unfollow a user."""
+    target_user = get_object_or_404(User, id=user_id)
+    
+    if target_user == request.user:
+        return JsonResponse({'error': '自分をフォローすることはできません'}, status=400)
+    
+    follow_instance, created = Follow.objects.get_or_create(
+        follower=request.user,
+        following=target_user
+    )
+    
+    if created:
+        # Update follower counts
+        request.user.profile.following_count += 1
+        request.user.profile.save()
+        
+        target_user.profile.followers_count += 1
+        target_user.profile.save()
+        
+        # Send notification
+        from apps.notifications.services import NotificationService
+        NotificationService.notify_new_follower(request.user, target_user)
+        
+        return JsonResponse({
+            'status': 'followed',
+            'message': f'{target_user.username}をフォローしました',
+            'followers_count': target_user.profile.followers_count
+        })
+    else:
+        # Unfollow
+        follow_instance.delete()
+        
+        # Update follower counts
+        request.user.profile.following_count -= 1
+        request.user.profile.save()
+        
+        target_user.profile.followers_count -= 1
+        target_user.profile.save()
+        
+        return JsonResponse({
+            'status': 'unfollowed',
+            'message': f'{target_user.username}のフォローを解除しました',
+            'followers_count': target_user.profile.followers_count
+        })
+
+
+def user_channel(request, username):
+    """User channel page."""
+    user = get_object_or_404(User, username=username)
+    profile = user.profile
+    
+    # Check if current user is following this channel
+    is_following = False
+    if request.user.is_authenticated:
+        is_following = Follow.objects.filter(
+            follower=request.user,
+            following=user
+        ).exists()
+    
+    # Get user's videos
+    from apps.content.models import Video
+    from apps.streaming.models import Stream
+    
+    videos = Video.objects.filter(
+        uploader=user,
+        status='ready',
+        privacy__in=['public', 'unlisted']
+    ).order_by('-published_at')
+    
+    # Get user's streams (if they can stream)
+    streams = None
+    if user.can_stream:
+        streams = Stream.objects.filter(
+            streamer=user
+        ).order_by('-created_at')[:5]
+    
+    # Pagination for videos
+    paginator = Paginator(videos, 12)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'channel_user': user,
+        'profile': profile,
+        'is_following': is_following,
+        'videos': page_obj,
+        'recent_streams': streams,
+        'stats': {
+            'total_videos': videos.count(),
+            'followers_count': profile.followers_count,
+            'following_count': profile.following_count,
+            'total_views': profile.total_views,
+        }
+    }
+    return render(request, 'accounts/channel.html', context)
+
+
+@login_required
+def following_list(request):
+    """List of users that current user is following."""
+    following = Follow.objects.filter(
+        follower=request.user
+    ).select_related('following', 'following__profile').order_by('-created_at')
+    
+    paginator = Paginator(following, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'following': page_obj,
+        'title': 'フォロー中'
+    }
+    return render(request, 'accounts/follow_list.html', context)
+
+
+@login_required
+def followers_list(request):
+    """List of users that follow current user."""
+    followers = Follow.objects.filter(
+        following=request.user
+    ).select_related('follower', 'follower__profile').order_by('-created_at')
+    
+    paginator = Paginator(followers, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'followers': page_obj,
+        'title': 'フォロワー'
+    }
+    return render(request, 'accounts/follow_list.html', context)

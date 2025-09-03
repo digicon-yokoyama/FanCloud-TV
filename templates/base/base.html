@@ -8,7 +8,36 @@
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css" rel="stylesheet" crossorigin="anonymous">
+    <style>
+    /* Fix for Bootstrap Icons rendering issues */
+    [class^="bi-"], [class*=" bi-"] {
+        font-family: "bootstrap-icons" !important;
+        font-style: normal;
+        font-weight: normal !important;
+        font-variant: normal;
+        text-transform: none;
+        line-height: 1;
+        vertical-align: -.125em;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        display: inline-block;
+        width: 1em;
+        height: 1em;
+    }
+    
+    .bi::before, [class^="bi-"]::before, [class*=" bi-"]::before {
+        font-family: "bootstrap-icons" !important;
+        font-style: normal;
+        font-weight: normal !important;
+        font-variant: normal;
+        text-transform: none;
+        line-height: 1;
+        vertical-align: -.125em;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+    </style>
     <!-- Video.js CSS -->
     <link href="https://vjs.zencdn.net/8.6.1/video-js.css" rel="stylesheet">
     <!-- HLS.js -->
@@ -210,9 +239,9 @@
             </a>
             
             <!-- Search -->
-            <form class="d-flex mx-auto" style="max-width: 600px; width: 100%;">
+            <form class="d-flex mx-auto" style="max-width: 600px; width: 100%;" action="{% url 'content:search' %}" method="get">
                 <div class="input-group">
-                    <input class="form-control" type="search" placeholder="動画を検索..." aria-label="Search">
+                    <input class="form-control" type="search" name="q" placeholder="動画を検索..." aria-label="Search" value="{{ request.GET.q }}">
                     <button class="btn btn-outline-secondary" type="submit">
                         <i class="bi bi-search"></i>
                     </button>
@@ -222,6 +251,25 @@
             <!-- User menu -->
             <div class="d-flex align-items-center">
                 {% if user.is_authenticated %}
+                    <!-- Notifications -->
+                    <div class="dropdown me-2">
+                        <button class="btn btn-link position-relative" type="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-bell fs-5"></i>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="notification-count" style="font-size: 0.6rem;">0</span>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end" style="width: 350px; max-height: 400px; overflow-y: auto;">
+                            <div class="dropdown-header d-flex justify-content-between align-items-center">
+                                <span>通知</span>
+                                <a href="#" class="text-primary small" id="mark-all-read">すべて既読</a>
+                            </div>
+                            <div id="notification-list">
+                                <div class="text-center text-muted p-3">読み込み中...</div>
+                            </div>
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item text-center" href="{% url 'notifications:list' %}">すべての通知を表示</a>
+                        </div>
+                    </div>
+                    
                     <div class="dropdown">
                         <button class="btn btn-link dropdown-toggle" type="button" data-bs-toggle="dropdown">
                             <img src="https://ui-avatars.com/api/?name={{ user.username|urlencode }}&size=32&rounded=true" 
@@ -244,14 +292,37 @@
                             <li><a class="dropdown-item" href="{% url 'accounts:profile' %}">
                                 <i class="bi bi-person me-2"></i>プロフィール
                             </a></li>
+                            <li><a class="dropdown-item" href="{% url 'accounts:channel' user.username %}">
+                                <i class="bi bi-tv me-2"></i>マイチャンネル
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'accounts:following' %}">
+                                <i class="bi bi-person-plus me-2"></i>フォロー中
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'accounts:followers' %}">
+                                <i class="bi bi-people me-2"></i>フォロワー
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'notifications:settings' %}">
+                                <i class="bi bi-bell me-2"></i>通知設定
+                            </a></li>
                             <li><a class="dropdown-item" href="{% url 'accounts:settings' %}">
                                 <i class="bi bi-gear me-2"></i>設定
                             </a></li>
                             
                             {% if perms.can_stream %}
                                 <li><hr class="dropdown-divider"></li>
+                                <li class="dropdown-header">ライブ配信</li>
                                 <li><a class="dropdown-item text-success" href="{% url 'streaming:create' %}">
-                                    <i class="bi bi-broadcast me-2"></i>配信開始
+                                    <i class="bi bi-broadcast me-2"></i>ライブ配信開始
+                                </a></li>
+                                <li><a class="dropdown-item" href="{% url 'streaming:my_streams' %}">
+                                    <i class="bi bi-collection-play me-2"></i>ライブ配信管理
+                                </a></li>
+                                <li class="dropdown-header">VOD動画</li>
+                                <li><a class="dropdown-item" href="{% url 'content:upload_video' %}">
+                                    <i class="bi bi-cloud-upload me-2"></i>VOD動画アップロード
+                                </a></li>
+                                <li><a class="dropdown-item" href="{% url 'content:manage_videos' %}">
+                                    <i class="bi bi-camera-video me-2"></i>VOD動画管理
                                 </a></li>
                             {% endif %}
                             
@@ -320,6 +391,42 @@
                     </ul>
                     
                     {% if user.is_authenticated %}
+                        {% if perms.can_stream %}
+                            <hr>
+                            <h6 class="sidebar-heading px-3 mt-4 mb-1 text-muted text-uppercase">
+                                <span>配信者メニュー</span>
+                            </h6>
+                            <ul class="nav nav-pills flex-column">
+                                <!-- ライブ配信セクション -->
+                                <li class="nav-item">
+                                    <a class="nav-link text-success {% if request.resolver_match.url_name == 'create' %}active{% endif %}" href="{% url 'streaming:create' %}">
+                                        <i class="bi bi-broadcast me-2"></i>
+                                        ライブ配信開始
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.url_name == 'my_streams' %}active{% endif %}" href="{% url 'streaming:my_streams' %}">
+                                        <i class="bi bi-collection-play me-2"></i>
+                                        ライブ配信管理
+                                    </a>
+                                </li>
+                                
+                                <!-- VOD動画セクション -->
+                                <li class="nav-item mt-2">
+                                    <a class="nav-link {% if request.resolver_match.url_name == 'upload_video' %}active{% endif %}" href="{% url 'content:upload_video' %}">
+                                        <i class="bi bi-cloud-upload me-2"></i>
+                                        VOD動画アップロード
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.url_name == 'manage_videos' %}active{% endif %}" href="{% url 'content:manage_videos' %}">
+                                        <i class="bi bi-camera-video me-2"></i>
+                                        VOD動画管理
+                                    </a>
+                                </li>
+                            </ul>
+                        {% endif %}
+                        
                         <hr>
                         <h6 class="sidebar-heading px-3 mt-4 mb-1 text-muted text-uppercase">
                             <span>ライブラリ</span>
@@ -369,6 +476,81 @@
         });
         
         // Close sidebar when clicking outside on mobile
+        
+        // Notification functionality
+        {% if user.is_authenticated %}
+        function loadNotifications() {
+            fetch('/api/notifications/api/unread/')
+            .then(response => response.json())
+            .then(data => {
+                const countElement = document.getElementById('notification-count');
+                const listElement = document.getElementById('notification-list');
+                
+                // Update count
+                countElement.textContent = data.unread_count;
+                countElement.style.display = data.unread_count > 0 ? 'block' : 'none';
+                
+                // Update list
+                if (data.notifications.length === 0) {
+                    listElement.innerHTML = '<div class="text-center text-muted p-3">通知はありません</div>';
+                } else {
+                    const notificationsHtml = data.notifications.map(notification => `
+                        <a class="dropdown-item" href="#" onclick="markAsRead(${notification.id})">
+                            <div class="d-flex align-items-start">
+                                <i class="bi bi-${
+                                    notification.type === 'new_follower' ? 'person-plus' :
+                                    notification.type === 'new_video' ? 'play-circle' :
+                                    notification.type === 'comment' ? 'chat-left-text' :
+                                    notification.type === 'like' ? 'hand-thumbs-up' : 'bell'
+                                } me-2 mt-1"></i>
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold small">${notification.title}</div>
+                                    <div class="text-muted small">${notification.message}</div>
+                                    <div class="text-muted" style="font-size: 0.75rem;">${new Date(notification.created_at).toLocaleString('ja-JP')}</div>
+                                </div>
+                            </div>
+                        </a>
+                    `).join('');
+                    listElement.innerHTML = notificationsHtml;
+                }
+            })
+            .catch(error => console.error('Error loading notifications:', error));
+        }
+        
+        function markAsRead(notificationId) {
+            fetch(`/api/notifications/api/mark-read/${notificationId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                loadNotifications();
+            })
+            .catch(error => console.error('Error marking notification as read:', error));
+        }
+        
+        // Mark all as read
+        document.getElementById('mark-all-read')?.addEventListener('click', function(e) {
+            e.preventDefault();
+            fetch('/api/notifications/api/mark-all-read/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                loadNotifications();
+            })
+            .catch(error => console.error('Error marking all as read:', error));
+        });
+        
+        // Load notifications on page load and periodically
+        loadNotifications();
+        setInterval(loadNotifications, 60000); // Check every minute
+        {% endif %}
         document.addEventListener('click', function(e) {
             const sidebar = document.getElementById('sidebar');
             const toggle = document.getElementById('sidebar-toggle');

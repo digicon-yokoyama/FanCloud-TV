@@ -1,0 +1,253 @@
+{% extends 'base/base.html' %}
+{% load humanize %}
+
+{% block title %}{{ title }} - {{ user.username }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="bi bi-{% if title == 'フォロー中' %}person-plus{% else %}people{% endif %} me-2"></i>
+                        {{ title }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if title == 'フォロー中' and following %}
+                        <div class="list-group list-group-flush">
+                            {% for follow in following %}
+                            <div class="list-group-item d-flex align-items-center justify-content-between px-0">
+                                <div class="d-flex align-items-center">
+                                    {% if follow.following.avatar %}
+                                        <img src="{{ follow.following.avatar.url }}" class="rounded-circle me-3" width="48" height="48" alt="{{ follow.following.username }}">
+                                    {% else %}
+                                        <div class="rounded-circle me-3 bg-light d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                            <i class="bi bi-person-fill text-muted"></i>
+                                        </div>
+                                    {% endif %}
+                                    <div>
+                                        <h6 class="mb-0">
+                                            <a href="{% url 'accounts:channel' follow.following.username %}" class="text-decoration-none">
+                                                {{ follow.following.username }}
+                                            </a>
+                                        </h6>
+                                        {% if follow.following.first_name or follow.following.last_name %}
+                                            <small class="text-muted">{{ follow.following.first_name }} {{ follow.following.last_name }}</small>
+                                        {% endif %}
+                                        <div class="text-muted small">
+                                            <i class="bi bi-people me-1"></i>{{ follow.following.profile.followers_count|intcomma }} フォロワー
+                                            <span class="mx-2">•</span>
+                                            フォロー開始: {{ follow.created_at|date:"Y年m月d日" }}
+                                        </div>
+                                        {% if follow.following.profile.bio %}
+                                            <p class="mb-0 mt-1 small text-muted">{{ follow.following.profile.bio|truncatechars:80 }}</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div>
+                                    <button class="btn btn-outline-danger btn-sm unfollow-btn" 
+                                            data-user-id="{{ follow.following.id }}">
+                                        <i class="bi bi-person-dash me-1"></i>フォロー解除
+                                    </button>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- Pagination -->
+                        {% if following.has_other_pages %}
+                        <div class="d-flex justify-content-center mt-4">
+                            <nav>
+                                <ul class="pagination">
+                                    {% if following.has_previous %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ following.previous_page_number }}">&laquo; 前へ</a>
+                                        </li>
+                                    {% endif %}
+                                    
+                                    {% for num in following.paginator.page_range %}
+                                        {% if following.number == num %}
+                                            <li class="page-item active">
+                                                <span class="page-link">{{ num }}</span>
+                                            </li>
+                                        {% elif num > following.number|add:'-3' and num < following.number|add:'3' %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+                                    
+                                    {% if following.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ following.next_page_number }}">次へ &raquo;</a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        </div>
+                        {% endif %}
+                        
+                    {% elif title == 'フォロワー' and followers %}
+                        <div class="list-group list-group-flush">
+                            {% for follow in followers %}
+                            <div class="list-group-item d-flex align-items-center justify-content-between px-0">
+                                <div class="d-flex align-items-center">
+                                    {% if follow.follower.avatar %}
+                                        <img src="{{ follow.follower.avatar.url }}" class="rounded-circle me-3" width="48" height="48" alt="{{ follow.follower.username }}">
+                                    {% else %}
+                                        <div class="rounded-circle me-3 bg-light d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                            <i class="bi bi-person-fill text-muted"></i>
+                                        </div>
+                                    {% endif %}
+                                    <div>
+                                        <h6 class="mb-0">
+                                            <a href="{% url 'accounts:channel' follow.follower.username %}" class="text-decoration-none">
+                                                {{ follow.follower.username }}
+                                            </a>
+                                        </h6>
+                                        {% if follow.follower.first_name or follow.follower.last_name %}
+                                            <small class="text-muted">{{ follow.follower.first_name }} {{ follow.follower.last_name }}</small>
+                                        {% endif %}
+                                        <div class="text-muted small">
+                                            <i class="bi bi-people me-1"></i>{{ follow.follower.profile.followers_count|intcomma }} フォロワー
+                                            <span class="mx-2">•</span>
+                                            フォロー開始: {{ follow.created_at|date:"Y年m月d日" }}
+                                        </div>
+                                        {% if follow.follower.profile.bio %}
+                                            <p class="mb-0 mt-1 small text-muted">{{ follow.follower.profile.bio|truncatechars:80 }}</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div>
+                                    {% if follow.follower != user %}
+                                        <!-- Check if current user is following this follower -->
+                                        <button class="btn btn-outline-primary btn-sm follow-back-btn" 
+                                                data-user-id="{{ follow.follower.id }}">
+                                            <i class="bi bi-person-plus me-1"></i>フォローバック
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- Pagination -->
+                        {% if followers.has_other_pages %}
+                        <div class="d-flex justify-content-center mt-4">
+                            <nav>
+                                <ul class="pagination">
+                                    {% if followers.has_previous %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ followers.previous_page_number }}">&laquo; 前へ</a>
+                                        </li>
+                                    {% endif %}
+                                    
+                                    {% for num in followers.paginator.page_range %}
+                                        {% if followers.number == num %}
+                                            <li class="page-item active">
+                                                <span class="page-link">{{ num }}</span>
+                                            </li>
+                                        {% elif num > followers.number|add:'-3' and num < followers.number|add:'3' %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+                                    
+                                    {% if followers.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ followers.next_page_number }}">次へ &raquo;</a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        </div>
+                        {% endif %}
+                        
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="bi bi-{% if title == 'フォロー中' %}person-plus{% else %}people{% endif %} display-1 text-muted"></i>
+                            <h4 class="mt-3 text-muted">{{ title }}がいません</h4>
+                            <p class="text-muted">
+                                {% if title == 'フォロー中' %}
+                                    まだ誰もフォローしていません。
+                                {% else %}
+                                    まだフォロワーがいません。
+                                {% endif %}
+                            </p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle unfollow buttons
+    document.querySelectorAll('.unfollow-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const userId = this.dataset.userId;
+            handleFollow(userId, this);
+        });
+    });
+    
+    // Handle follow back buttons
+    document.querySelectorAll('.follow-back-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const userId = this.dataset.userId;
+            handleFollow(userId, this);
+        });
+    });
+    
+    function handleFollow(userId, button) {
+        // Disable button during request
+        button.disabled = true;
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="bi bi-hourglass-split"></i> 処理中...';
+        
+        fetch(`/accounts/follow/${userId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'followed') {
+                if (button.classList.contains('follow-back-btn')) {
+                    button.className = 'btn btn-outline-danger btn-sm unfollow-btn';
+                    button.innerHTML = '<i class="bi bi-person-dash me-1"></i>フォロー解除';
+                }
+            } else if (data.status === 'unfollowed') {
+                // Remove the entire item from the list if it's an unfollow action
+                if (button.classList.contains('unfollow-btn')) {
+                    button.closest('.list-group-item').remove();
+                }
+            }
+            
+            // Show message (you can implement a toast notification here)
+            if (data.message) {
+                console.log(data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            button.innerHTML = originalText;
+        })
+        .finally(() => {
+            button.disabled = false;
+        });
+    }
+});
+</script>
+
+<!-- Add CSRF token for AJAX requests -->
+{% csrf_token %}
+{% endblock %}

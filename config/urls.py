@@ -14,8 +14,8 @@ urlpatterns = [
     path('api/streaming/', include('apps.streaming.urls', namespace='api_streaming')),
     path('api/content/', include('apps.content.urls', namespace='api_content')),
     path('api/chat/', include('apps.chat.urls')),
-    path('api/notifications/', include('apps.notifications.urls')),
     path('api/analytics/', include('apps.analytics.urls')),
+    path('api/notifications/', include('apps.notifications.urls', namespace='api_notifications')),
     
     # Test endpoints (development only)
     path('test-websocket/', lambda request: render(request, 'test_websocket.html'), name='test_websocket'),
@@ -24,6 +24,7 @@ urlpatterns = [
     path('', include('apps.streaming.urls')),
     path('content/', include('apps.content.urls')),
     path('accounts/', include('apps.accounts.urls')),
+    path('notifications/', include('apps.notifications.urls')),
     path('legal/', include('apps.legal.urls')),
 ]
 

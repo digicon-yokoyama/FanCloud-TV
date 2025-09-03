@@ -1,0 +1,229 @@
+{% extends "base/base.html" %}
+{% load static %}
+
+{% block title %}動画アップロード - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.upload-area {
+    border: 3px dashed #dee2e6;
+    border-radius: 10px;
+    background: #f8f9fa;
+    padding: 60px 20px;
+    text-align: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.upload-area:hover {
+    border-color: #007bff;
+    background: #e9ecef;
+}
+
+.upload-area.dragover {
+    border-color: #28a745;
+    background: #d4edda;
+}
+
+.upload-icon {
+    font-size: 48px;
+    color: #6c757d;
+    margin-bottom: 20px;
+}
+
+.file-info {
+    background: #e9ecef;
+    border-radius: 5px;
+    padding: 10px;
+    margin: 10px 0;
+    display: none;
+}
+
+.progress {
+    height: 10px;
+    margin: 20px 0;
+    display: none;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.supported-formats {
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin-top: 5px;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Most JavaScript functionality commented out for development
+/*
+document.addEventListener('DOMContentLoaded', function() {
+    const uploadArea = document.getElementById('upload-area');
+    const fileInput = document.getElementById('video_file');
+    const fileInfo = document.getElementById('file-info');
+    const fileName = document.getElementById('file-name');
+    const fileSize = document.getElementById('file-size');
+    const progressBar = document.querySelector('.progress');
+    const form = document.getElementById('upload-form');
+    
+    // Original drag and drop and file validation code commented out
+    // [Previous JavaScript code here]
+});
+*/
+
+// Simple form validation
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('upload-form');
+    const titleInput = document.getElementById('title');
+    
+    form.addEventListener('submit', function(e) {
+        if (!titleInput.value.trim()) {
+            e.preventDefault();
+            alert('タイトルを入力してください。');
+            return;
+        }
+        
+        // Show processing message
+        const submitButton = form.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>動画作成中...';
+    });
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-cloud-upload me-2"></i>動画アップロード
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form id="upload-form" method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <!-- File Upload Area (Future Implementation) -->
+                        <!--
+                        <div class="form-group">
+                            <label class="form-label fw-bold">動画ファイル *</label>
+                            <div id="upload-area" class="upload-area">
+                                <i class="bi bi-cloud-upload upload-icon"></i>
+                                <h5>ファイルをここにドラッグ&ドロップ</h5>
+                                <p class="mb-2">または</p>
+                                <button type="button" class="btn btn-outline-primary">
+                                    <i class="bi bi-folder-open me-1"></i>ファイルを選択
+                                </button>
+                                <input type="file" id="video_file" name="video_file" accept="video/*" style="display: none;" required>
+                            </div>
+                            <div class="supported-formats">
+                                <i class="bi bi-info-circle me-1"></i>
+                                対応形式: {{ supported_formats|join:", "|upper }} (最大 {{ max_file_size }}MB)
+                            </div>
+                            
+                            <div id="file-info" class="file-info">
+                                <strong>選択されたファイル:</strong><br>
+                                <i class="bi bi-file-earmark-play me-1"></i>
+                                <span id="file-name"></span> (<span id="file-size"></span>)
+                            </div>
+                        </div>
+
+                        <div class="progress">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                 role="progressbar" style="width: 0%">0%</div>
+                        </div>
+                        -->
+
+                        <!-- Note about file upload -->
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>開発中:</strong> 現在はタイトルと説明のみで動画エントリを作成できます。
+                        </div>
+
+                        <!-- Video Details -->
+                        <div class="form-group">
+                            <label for="title" class="form-label fw-bold">タイトル *</label>
+                            <input type="text" class="form-control" id="title" name="title" 
+                                   maxlength="200" required placeholder="動画のタイトルを入力してください">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="description" class="form-label fw-bold">説明</label>
+                            <textarea class="form-control" id="description" name="description" 
+                                      rows="4" placeholder="動画の説明を入力してください（任意）"></textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="category" class="form-label fw-bold">カテゴリ</label>
+                                    <select class="form-select" id="category" name="category">
+                                        <option value="">カテゴリを選択してください</option>
+                                        {% for category in categories %}
+                                            <option value="{{ category.id }}">{{ category.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="privacy" class="form-label fw-bold">公開設定</label>
+                                    <select class="form-select" id="privacy" name="privacy">
+                                        <option value="public">公開</option>
+                                        <option value="unlisted">限定公開</option>
+                                        <option value="private">非公開</option>
+                                        <option value="premium">プレミアム限定</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'content:manage_videos' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-1"></i>キャンセル
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-cloud-upload me-1"></i>アップロード開始
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Upload Tips -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="bi bi-lightbulb me-2"></i>アップロードのヒント
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li>高品質な動画のために、1080p以上の解像度を推奨します</li>
+                        <li>MP4形式が最も互換性が高くおすすめです</li>
+                        <li>アップロード中はページを閉じないでください</li>
+                        <li>処理完了まで数分かかる場合があります</li>
+                        <li>処理状況は「マイ動画」ページで確認できます</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

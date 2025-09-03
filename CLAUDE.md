@@ -44,6 +44,9 @@ docker compose exec web python manage.py makemigrations
 
 # テストユーザー作成（初期セットアップ後に実行）
 docker compose exec web python scripts/create_test_users.py
+
+# VODコンテンツのモックデータ作成
+docker compose exec web python manage.py seed_content --reset --count 10
 ```
 
 ### テスト実行
@@ -55,6 +58,21 @@ docker compose exec web python manage.py test
 # 特定アプリのテスト実行
 docker compose exec web python manage.py test apps.chat
 docker compose exec web python manage.py test apps.streaming
+```
+
+### データシーディング
+
+```bash
+# VODコンテンツのモックデータ作成
+docker compose exec web python manage.py seed_content
+
+# オプション:
+# --reset: 既存データを削除してから作成
+# --count N: 作成する動画数（デフォルト: 12）
+# --tenant SCHEMA: 対象テナント（デフォルト: localhost）
+
+# 使用例
+docker compose exec web python manage.py seed_content --reset --count 15
 ```
 
 ## アーキテクチャ概要
@@ -170,3 +188,17 @@ docker compose exec web python manage.py test apps.streaming
 - 権限チェック用テンプレートコンテキストプロセッサの活用
 - テストアカウントで異なるユーザーロールをテスト
 - 詳細な権限システムドキュメントは`docs/PERMISSIONS.md`を参照
+
+## 禁止事項
+
+### 絵文字の使用禁止
+- **NEVER use emojis (絵文字) in any code, templates, or fallback content**
+- 絵文字は日本語環境でのフォント表示問題やアクセシビリティの問題を引き起こすため、一切使用しない
+- フォールバックが必要な場合は適切なアイコンフォント（Bootstrap Icons）またはテキストベースの代替手段を使用する
+
+### 特定企業・サービス名の使用禁止
+- **NEVER include specific company or service names (YouTube, Google, etc.) in code, function names, class names, or comments**
+- コード内で特定企業・サービス名を参照することは法的問題やブランド問題を引き起こす可能性がある
+- 機能を説明する汎用的で中立的な命名を使用する
+- 例: `youtube_time` → `readable_time`, `google_auth` → `oauth_auth`
+- コメントや説明で「○○風の」という表現も避け、機能自体を説明する

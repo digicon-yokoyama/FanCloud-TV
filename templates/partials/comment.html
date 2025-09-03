@@ -1,0 +1,89 @@
+{% load humanize %}
+
+<div class="comment mb-3" data-comment-id="{{ comment.id }}">
+    <div class="d-flex">
+        {% if comment.user.avatar %}
+            <img src="{{ comment.user.avatar.url }}" class="rounded-circle me-3" width="32" height="32" alt="{{ comment.user.username }}">
+        {% else %}
+            <div class="rounded-circle me-3 bg-light d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                <i class="bi bi-person-fill text-muted small"></i>
+            </div>
+        {% endif %}
+        
+        <div class="flex-grow-1">
+            <div class="d-flex align-items-center mb-1">
+                <strong class="me-2">
+                    <a href="{% url 'accounts:channel' comment.user.username %}" class="text-decoration-none text-dark">
+                        {{ comment.user.username }}
+                    </a>
+                </strong>
+                <small class="text-muted">{{ comment.created_at|timesince }}前</small>
+                {% if comment.is_pinned %}
+                    <span class="badge bg-primary ms-2">ピン留め</span>
+                {% endif %}
+            </div>
+            
+            <div class="comment-content">
+                {{ comment.content|linebreaks }}
+            </div>
+            
+            <div class="comment-actions mt-2">
+                <div class="d-flex align-items-center">
+                    {% if user.is_authenticated %}
+                        <button class="btn btn-sm btn-outline-secondary me-2 reply-btn" 
+                                data-comment-id="{{ comment.id }}">
+                            <i class="bi bi-reply me-1"></i>返信
+                        </button>
+                    {% endif %}
+                    
+                    {% if user.is_authenticated and user == comment.user or user == comment.video.uploader %}
+                        <button class="btn btn-sm btn-outline-danger delete-comment-btn" 
+                                data-comment-id="{{ comment.id }}">
+                            <i class="bi bi-trash me-1"></i>削除
+                        </button>
+                    {% endif %}
+                </div>
+                
+                <!-- Reply form (initially hidden) -->
+                {% if user.is_authenticated %}
+                <div class="reply-form mt-3" id="reply-form-{{ comment.id }}" style="display: none;">
+                    <form class="reply-comment-form" data-parent-id="{{ comment.id }}" data-video-id="{{ comment.video.id }}">
+                        <div class="d-flex">
+                            {% if user.avatar %}
+                                <img src="{{ user.avatar.url }}" class="rounded-circle me-3" width="28" height="28" alt="{{ user.username }}">
+                            {% else %}
+                                <div class="rounded-circle me-3 bg-light d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
+                                    <i class="bi bi-person-fill text-muted small"></i>
+                                </div>
+                            {% endif %}
+                            <div class="flex-grow-1">
+                                <textarea class="form-control form-control-sm reply-input" rows="2" 
+                                          placeholder="返信を入力..."></textarea>
+                                <div class="d-flex justify-content-end mt-2">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary me-2 cancel-reply-btn">
+                                        キャンセル
+                                    </button>
+                                    <button type="submit" class="btn btn-sm btn-primary">
+                                        <i class="bi bi-send me-1"></i>返信
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Replies -->
+            {% if comment.replies.all %}
+                <div class="replies mt-3 ms-3 border-start border-2 border-light ps-3">
+                    {% for reply in comment.replies.all %}
+                        {% if not reply.is_hidden %}
+                            {% include 'partials/comment.html' with comment=reply %}
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>

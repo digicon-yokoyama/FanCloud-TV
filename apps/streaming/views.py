@@ -38,11 +38,13 @@ def home(request):
     # Get subscription videos for authenticated users
     subscription_videos = []
     if request.user.is_authenticated:
-        # This would be implemented with a proper follow system
+        from apps.accounts.models import Follow
+        following_users = Follow.objects.filter(follower=request.user).values_list('following', flat=True)
         subscription_videos = Video.objects.filter(
+            uploader__in=following_users,
             status='ready',
             privacy__in=['public', 'unlisted']
-        ).order_by('-published_at')[:4]
+        ).order_by('-published_at')[:8]
     
     context = {
         'live_streams': live_streams,
