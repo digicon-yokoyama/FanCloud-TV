@@ -37,7 +37,15 @@
       "Bash(chmod:*)",
       "Read(/var/folders/rn/d61zm0pj551342190c1qzvpw0000gn/T/TemporaryItems/NSIRD_screencaptureui_cwlqe2/**)",
       "Bash(sed:*)",
-      "Read(/var/folders/rn/d61zm0pj551342190c1qzvpw0000gn/T/TemporaryItems/NSIRD_screencaptureui_QFlANk/**)"
+      "Read(/var/folders/rn/d61zm0pj551342190c1qzvpw0000gn/T/TemporaryItems/NSIRD_screencaptureui_QFlANk/**)",
+      "Bash(cat:*)",
+      "Bash(tree:*)",
+      "Read(/var/folders/rn/d61zm0pj551342190c1qzvpw0000gn/T/TemporaryItems/NSIRD_screencaptureui_dRxIUT/**)",
+      "Read(/var/folders/rn/d61zm0pj551342190c1qzvpw0000gn/T/TemporaryItems/NSIRD_screencaptureui_vdIlEW/**)",
+      "Read(/var/folders/rn/d61zm0pj551342190c1qzvpw0000gn/T/TemporaryItems/NSIRD_screencaptureui_vdIlEW/**)",
+      "Read(//var/folders/rn/d61zm0pj551342190c1qzvpw0000gn/T/TemporaryItems/NSIRD_screencaptureui_dH5hsD/**)",
+      "Read(//var/folders/rn/d61zm0pj551342190c1qzvpw0000gn/T/TemporaryItems/NSIRD_screencaptureui_FYR1Vh/**)",
+      "Bash(npm run lint)"
     ],
     "deny": [],
     "ask": []

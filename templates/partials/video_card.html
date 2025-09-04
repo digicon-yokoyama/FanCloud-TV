@@ -3,29 +3,32 @@
 
 <div class="col">
     <div class="card video-card h-100">
-        <div class="video-thumbnail position-relative" style="aspect-ratio: 16/9; overflow: hidden;">
-            {% if video.thumbnail_url and video.thumbnail_url != '' %}
-                <img src="{{ video.thumbnail_url }}" alt="{{ video.title }}" 
-                     class="w-100 h-100" style="object-fit: cover;"
-                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                <div class="d-none w-100 h-100 align-items-center justify-content-center bg-light text-muted">
-                    <i class="bi bi-camera-video" style="font-size: 3rem; opacity: 0.5;"></i>
-                </div>
-            {% else %}
-                <div class="d-flex w-100 h-100 align-items-center justify-content-center bg-light text-muted">
-                    <i class="bi bi-camera-video" style="font-size: 3rem; opacity: 0.5;"></i>
-                </div>
-            {% endif %}
-            
-            {% if video.is_live %}
-                <div class="live-badge">LIVE</div>
-                <div class="viewer-count">
-                    <i class="bi bi-eye-fill me-1"></i>{{ video.viewer_count|floatformat:0 }}
-                </div>
-            {% elif video.duration > 0 %}
-                <div class="video-duration">{{ video.duration_formatted }}</div>
-            {% endif %}
-        </div>
+        <a href="{% if video.is_live %}{% url 'streaming:watch' video.stream_id %}{% else %}{% url 'content:watch' video.id %}{% endif %}" 
+           class="text-decoration-none">
+            <div class="video-thumbnail position-relative" style="aspect-ratio: 16/9; overflow: hidden;">
+                {% if video.thumbnail_url and video.thumbnail_url != '' %}
+                    <img src="{{ video.thumbnail_url }}" alt="{{ video.title }}" 
+                         class="w-100 h-100" style="object-fit: cover;"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div class="d-none w-100 h-100 align-items-center justify-content-center bg-light text-muted">
+                        <i class="bi bi-camera-video" style="font-size: 3rem; opacity: 0.5;"></i>
+                    </div>
+                {% else %}
+                    <div class="d-flex w-100 h-100 align-items-center justify-content-center bg-light text-muted">
+                        <i class="bi bi-camera-video" style="font-size: 3rem; opacity: 0.5;"></i>
+                    </div>
+                {% endif %}
+                
+                {% if video.is_live %}
+                    <div class="live-badge">LIVE</div>
+                    <div class="viewer-count">
+                        <i class="bi bi-eye-fill me-1"></i>{{ video.viewer_count|floatformat:0 }}
+                    </div>
+                {% elif video.duration > 0 %}
+                    <div class="video-duration">{{ video.duration_formatted }}</div>
+                {% endif %}
+            </div>
+        </a>
         
         <div class="card-body p-3">
             <h6 class="card-title mb-2" style="min-height: 1.2em; font-weight: 600;">
@@ -37,13 +40,37 @@
             
             <!-- Channel Info -->
             <div class="d-flex align-items-center mb-1">
-                <img src="https://ui-avatars.com/api/?name={{ video.uploader.username }}&size=24&rounded=true" 
-                     class="rounded-circle me-2" width="24" height="24" alt="{{ video.uploader.username }}">
-                <small class="text-muted">
-                    <a href="{% url 'accounts:channel' video.uploader.username %}" class="text-decoration-none text-muted">
-                        {{ video.uploader.username }}
-                    </a>
-                </small>
+                {% if video.uploader %}
+                    {% if video.uploader.avatar %}
+                        <img src="{{ video.uploader.avatar.url }}" alt="{{ video.uploader.username }}" 
+                             class="rounded-circle me-2" width="24" height="24">
+                    {% else %}
+                        <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-2" 
+                             style="width: 24px; height: 24px;">
+                            <i class="bi bi-person-fill text-muted" style="font-size: 12px;"></i>
+                        </div>
+                    {% endif %}
+                    <small class="text-muted">
+                        <a href="{% url 'accounts:channel' video.uploader.username %}" class="text-decoration-none text-muted">
+                            {{ video.uploader.username }}
+                        </a>
+                    </small>
+                {% elif video.streamer %}
+                    {% if video.streamer.avatar %}
+                        <img src="{{ video.streamer.avatar.url }}" alt="{{ video.streamer.username }}" 
+                             class="rounded-circle me-2" width="24" height="24">
+                    {% else %}
+                        <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-2" 
+                             style="width: 24px; height: 24px;">
+                            <i class="bi bi-person-fill text-muted" style="font-size: 12px;"></i>
+                        </div>
+                    {% endif %}
+                    <small class="text-muted">
+                        <a href="{% url 'accounts:channel' video.streamer.username %}" class="text-decoration-none text-muted">
+                            {{ video.streamer.username }}
+                        </a>
+                    </small>
+                {% endif %}
             </div>
             
             <!-- View Count -->

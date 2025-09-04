@@ -22,20 +22,20 @@ git clone <repository-url>
 cd you-clone
 
 # コンテナを起動
-docker-compose up -d
+docker compose up -d
 
 # データベースマイグレーション
-docker-compose exec web python manage.py migrate
+docker compose exec web python manage.py migrate
 
 # 管理者アカウント作成
-docker-compose exec web python manage.py createsuperuser
+docker compose exec web python manage.py createsuperuser
 ```
 
 ### 2. テストユーザー作成
 
 ```bash
 # テストユーザーを自動作成
-docker-compose exec web python create_test_users.py
+docker compose exec web python create_test_users.py
 ```
 
 ### 3. アプリケーション起動
@@ -142,7 +142,7 @@ you-clone/
 ├── static/           # 静的ファイル
 ├── config/           # Django設定
 ├── docs/             # ドキュメント
-└── docker-compose.yml
+└── docker compose.yml
 ```
 
 ## 🌐 環境設定
@@ -176,13 +176,13 @@ VIDEO_SETTINGS__MOCK_MODE=True
 
 ```bash
 # コンテナ起動
-docker-compose up -d
+docker compose up -d
 
 # ログ確認
-docker-compose logs -f web
+docker compose logs -f web
 
 # コンテナ内でコマンド実行
-docker-compose exec web python manage.py shell
+docker compose exec web python manage.py shell
 ```
 
 ### コード規約
@@ -196,25 +196,10 @@ docker-compose exec web python manage.py shell
 
 ```bash
 # Django テスト
-docker-compose exec web python manage.py test
+docker compose exec web python manage.py test
 
 # 個別アプリテスト
-docker-compose exec web python manage.py test apps.accounts
+docker compose exec web python manage.py test apps.accounts
 ```
 
-## 🤝 コントリビューション
 
-1. Feature ブランチを作成
-2. 変更を実装
-3. テストを追加・実行
-4. プルリクエストを作成
-
-## 📄 ライセンス
-
-このプロジェクトはMITライセンスの下で公開されています。
-
----
-
-**プロジェクト開始**: 2025-08-29  
-**最終更新**: 2025-09-01  
-**現在のフェーズ**: Phase 2 (コア機能実装)

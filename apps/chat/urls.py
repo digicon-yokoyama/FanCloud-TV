@@ -12,4 +12,11 @@ urlpatterns = [
     path('stamps/', views.get_stamps, name='get_stamps'),
     path('react/', views.toggle_reaction, name='toggle_reaction'),
     path('reactions/<int:message_id>/', views.get_message_reactions, name='get_message_reactions'),
+    
+    # Moderation endpoints
+    path('banned-words/<str:stream_id>/', views.manage_banned_words, name='manage_banned_words'),
+    path('banned-words/remove/<int:word_id>/', views.remove_banned_word, name='remove_banned_word'),
+    path('timeout/<str:stream_id>/', views.timeout_user, name='timeout_user'),
+    path('timeouts/<str:stream_id>/', views.get_active_timeouts, name='get_active_timeouts'),
+    path('timeout/remove/<int:timeout_id>/', views.remove_timeout, name='remove_timeout'),
 ]

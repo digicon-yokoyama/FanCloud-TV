@@ -6,8 +6,7 @@
 {% block extra_css %}
 <style>
 :root {
-    --brand-red: #ff0000;
-    --light-bg: #f9f9f9;
+    --light-bg: #f8f9fa;
     --card-bg: #ffffff;
     --border-color: #e0e0e0;
     --text-primary: #212529;
@@ -32,7 +31,7 @@
 .stream-preview {
     width: 100%;
     aspect-ratio: 16/9;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #6c757d;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -58,10 +57,10 @@
     color: white;
 }
 
-.status-created { background: #2196f3; }
-.status-live { background: var(--brand-red); }
-.status-ended { background: #666; }
-.status-error { background: #ff9800; }
+.status-created { background: #6c757d; }
+.status-live { background: #6c757d; }
+.status-ended { background: #6c757d; }
+.status-error { background: #6c757d; }
 
 .preview-info {
     padding: 16px;
@@ -126,7 +125,7 @@
 
 .form-control:focus {
     outline: none;
-    border-color: #2196f3;
+    border-color: var(--text-secondary);
     background: var(--light-bg);
     color: var(--text-primary);
 }
@@ -194,7 +193,7 @@
 
 .tab-nav-item.active {
     color: var(--text-primary);
-    border-bottom-color: #2196f3;
+    border-bottom-color: var(--text-secondary);
 }
 
 .tab-content {
@@ -232,52 +231,8 @@
     border-left: none;
 }
 
-.btn-brand {
-    background: #2196f3;
-    border-color: #2196f3;
-    color: white;
-    padding: 8px 16px;
-    border-radius: 8px;
-    font-weight: 500;
-    transition: background-color 0.2s;
-}
 
-.btn-brand:hover {
-    background: #1976d2;
-    color: white;
-}
 
-.btn-brand-outline {
-    background: transparent;
-    border: 1px solid var(--border-color);
-    color: var(--text-primary);
-    padding: 8px 16px;
-    border-radius: 8px;
-    font-weight: 500;
-    transition: all 0.2s;
-}
-
-.btn-brand-outline:hover {
-    background: var(--hover-bg);
-    color: var(--text-primary);
-    border-color: var(--text-secondary);
-}
-
-.btn-brand-red {
-    background: var(--brand-red);
-    border-color: var(--brand-red);
-    color: white;
-    padding: 12px 24px;
-    border-radius: 8px;
-    font-weight: 600;
-    font-size: 16px;
-    transition: background-color 0.2s;
-}
-
-.btn-brand-red:hover {
-    background: #cc0000;
-    color: white;
-}
 
 .quality-selector {
     display: flex;
@@ -297,18 +252,18 @@
 }
 
 .quality-option:hover {
-    border-color: #2196f3;
-    background: rgba(33, 150, 243, 0.1);
+    border-color: var(--text-secondary);
+    background: var(--hover-bg);
 }
 
 .quality-option.selected {
-    border-color: #2196f3;
-    background: rgba(33, 150, 243, 0.15);
+    border-color: var(--text-primary);
+    background: var(--hover-bg);
 }
 
 .quality-radio {
     margin-right: 12px;
-    accent-color: #2196f3;
+    accent-color: var(--text-secondary);
 }
 
 .quality-info {
@@ -349,7 +304,7 @@
 }
 
 .toggle-switch.active {
-    background: #2196f3;
+    background: var(--text-secondary);
 }
 
 .toggle-switch::before {
@@ -419,6 +374,96 @@
 .stat-label {
     font-size: 13px;
     color: var(--text-secondary);
+}
+
+/* Chat Management Styles */
+.chat-control-bar {
+    border: 1px solid var(--border-color);
+}
+
+.chat-messages-scroll {
+    height: 400px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px;
+    background: var(--card-bg);
+}
+
+.chat-message {
+    background: var(--card-bg);
+    transition: background 0.2s;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+}
+
+.chat-message:hover {
+    background: var(--hover-bg);
+    border-color: var(--border-color);
+}
+
+.chat-message.pinned {
+    border-color: var(--text-secondary) !important;
+    background: var(--hover-bg);
+}
+
+.ng-words-list {
+    max-height: 120px;
+    overflow-y: auto;
+    min-height: 40px;
+}
+
+.ng-words-list .badge {
+    margin: 2px 4px 2px 0;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.timeout-list {
+    max-height: 100px;
+    overflow-y: auto;
+    min-height: 30px;
+    font-size: 13px;
+}
+
+.card-header {
+    font-weight: 600;
+}
+
+.chat-messages-scroll::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chat-messages-scroll::-webkit-scrollbar-track {
+    background: var(--light-bg);
+    border-radius: 3px;
+}
+
+.chat-messages-scroll::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 3px;
+}
+
+.chat-messages-scroll::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
+}
+
+.ng-words-list::-webkit-scrollbar,
+.timeout-list::-webkit-scrollbar {
+    width: 4px;
+}
+
+.ng-words-list::-webkit-scrollbar-track,
+.timeout-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.ng-words-list::-webkit-scrollbar-thumb,
+.timeout-list::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 2px;
 }
 
 @media (max-width: 768px) {
@@ -516,7 +561,7 @@
                             </div>
                         {% else %}
                             <div class="viewer-count">
-                                <i class="bi bi-circle" style="color: #666;"></i>
+                                <i class="bi bi-circle" style="color: var(--text-secondary);"></i>
                                 <span>配信待機中</span>
                             </div>
                         {% endif %}
@@ -535,7 +580,7 @@
                     <div class="settings-header">
                         <div class="d-flex justify-content-between align-items-center">
                             <h5 style="margin: 0;">{{ stream.title }}</h5>
-                            <button class="btn btn-brand-outline btn-sm" onclick="toggleEditMode()">編集</button>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="toggleEditMode()">編集</button>
                         </div>
                         <div style="margin-top: 8px; color: var(--text-secondary); font-size: 14px;">
                             カテゴリ: {{ stream.category.name|default:"未設定" }}
@@ -559,14 +604,14 @@
                             {% if stream.status == 'created' %}
                                 <form method="post" action="{% url 'streaming:start_stream' stream.stream_id %}" style="flex: 1;">
                                     {% csrf_token %}
-                                    <button type="submit" class="btn btn-brand-red w-100">
+                                    <button type="submit" class="btn btn-outline-secondary w-100">
                                         <i class="bi bi-play-circle-fill me-2"></i>配信を開始
                                     </button>
                                 </form>
                             {% elif stream.status == 'live' %}
                                 <form method="post" action="{% url 'streaming:end_stream' stream.stream_id %}" style="flex: 1;">
                                     {% csrf_token %}
-                                    <button type="submit" class="btn btn-brand-red w-100">
+                                    <button type="submit" class="btn btn-outline-secondary w-100">
                                         <i class="bi bi-stop-circle-fill me-2"></i>配信を終了
                                     </button>
                                 </form>
@@ -574,18 +619,18 @@
                             
                             {% if stream.status == 'live' %}
                                 <a href="{% url 'streaming:watch' stream.stream_id %}" target="_blank" 
-                                   class="btn btn-brand-outline">
+                                   class="btn btn-outline-secondary">
                                     <i class="bi bi-eye me-1"></i>視聴
                                 </a>
                             {% endif %}
                         </div>
 
                         <div class="action-buttons">
-                            <a href="{% url 'streaming:my_streams' %}" class="btn btn-brand-outline">
+                            <a href="{% url 'streaming:my_streams' %}" class="btn btn-outline-secondary">
                                 <i class="bi bi-arrow-left me-2"></i>配信一覧に戻る
                             </a>
                             {% if stream.status == 'ended' %}
-                                <button class="btn btn-brand-outline" onclick="deleteStream()">
+                                <button class="btn btn-outline-secondary" onclick="deleteStream()">
                                     <i class="bi bi-trash me-1"></i>削除
                                 </button>
                             {% endif %}
@@ -601,6 +646,7 @@
                 <button class="tab-nav-item active" data-tab="settings">ライブ配信の設定</button>
                 <button class="tab-nav-item" data-tab="obs-settings">OBS連携</button>
                 <button class="tab-nav-item" data-tab="analytics">アナリティクス</button>
+                <button class="tab-nav-item" data-tab="chat-management">チャット管理</button>
                 <button class="tab-nav-item" data-tab="stream-details">ストリームの詳細</button>
             </div>
 
@@ -617,7 +663,7 @@
                                 <label class="form-label">ストリームURL</label>
                                 <div class="input-group">
                                     <input type="text" class="form-control" value="{{ stream.ingest_url }}" readonly>
-                                    <button class="btn btn-brand-outline" type="button" onclick="copyToClipboard('{{ stream.ingest_url }}')">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard('{{ stream.ingest_url }}')">
                                         <i class="bi bi-clipboard"></i>
                                     </button>
                                 </div>
@@ -631,10 +677,10 @@
                                 <div class="input-group">
                                     <input type="password" class="form-control" id="stream-key" 
                                            value="{{ stream.stream_key }}" readonly>
-                                    <button class="btn btn-brand-outline" type="button" id="toggle-key">
+                                    <button class="btn btn-outline-secondary" type="button" id="toggle-key">
                                         <i class="bi bi-eye"></i>
                                     </button>
-                                    <button class="btn btn-brand-outline" type="button" onclick="copyToClipboard('{{ stream.stream_key }}')">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard('{{ stream.stream_key }}')">
                                         <i class="bi bi-clipboard"></i>
                                     </button>
                                 </div>
@@ -655,7 +701,7 @@
                                         <label class="form-label">バックアップストリームURL</label>
                                         <div class="input-group">
                                             <input type="text" class="form-control" value="{{ stream.backup_ingest_url|default:'rtmp://backup.example.com/live' }}" readonly>
-                                            <button class="btn btn-brand-outline" type="button" onclick="copyToClipboard('{{ stream.backup_ingest_url|default:'' }}')">
+                                            <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard('{{ stream.backup_ingest_url|default:'' }}')">
                                                 <i class="bi bi-clipboard"></i>
                                             </button>
                                         </div>
@@ -669,10 +715,10 @@
                                         <div class="input-group">
                                             <input type="password" class="form-control" id="backup-stream-key" 
                                                    value="{{ stream.backup_stream_key|default:'backup-key-placeholder' }}" readonly>
-                                            <button class="btn btn-brand-outline" type="button" id="toggle-backup-key">
+                                            <button class="btn btn-outline-secondary" type="button" id="toggle-backup-key">
                                                 <i class="bi bi-eye"></i>
                                             </button>
-                                            <button class="btn btn-brand-outline" type="button" onclick="copyToClipboard('{{ stream.backup_stream_key|default:'' }}')">
+                                            <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard('{{ stream.backup_stream_key|default:'' }}')">
                                                 <i class="bi bi-clipboard"></i>
                                             </button>
                                         </div>
@@ -788,11 +834,10 @@
                                     <input type="text" class="form-control" id="obs-overlay-url-normal" 
                                            value="{% if stream.obs_overlay_token %}{{ stream.get_obs_overlay_url }}?anonymous=false{% else %}URLを生成してください{% endif %}" 
                                            readonly>
-                                    <button class="btn btn-brand-outline" type="button" onclick="copyToClipboard(document.getElementById('obs-overlay-url-normal').value)">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard(document.getElementById('obs-overlay-url-normal').value)">
                                         <i class="bi bi-clipboard"></i>
                                     </button>
-                                    <button class="btn btn-brand-outline" type="button" onclick="testObsOverlay('normal')" 
-                                            {% if not stream.obs_overlay_token %}disabled{% endif %}>
+                                    <button class="btn btn-outline-secondary" type="button" onclick="testObsOverlay('normal')" {% if not stream.obs_overlay_token %}disabled{% endif %}>
                                         <i class="bi bi-eye"></i>
                                     </button>
                                 </div>
@@ -808,11 +853,10 @@
                                     <input type="text" class="form-control" id="obs-overlay-url-anonymous" 
                                            value="{% if stream.obs_overlay_token %}{{ stream.get_obs_overlay_url }}?anonymous=true{% else %}URLを生成してください{% endif %}" 
                                            readonly>
-                                    <button class="btn btn-brand-outline" type="button" onclick="copyToClipboard(document.getElementById('obs-overlay-url-anonymous').value)">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard(document.getElementById('obs-overlay-url-anonymous').value)">
                                         <i class="bi bi-clipboard"></i>
                                     </button>
-                                    <button class="btn btn-brand-outline" type="button" onclick="testObsOverlay('anonymous')" 
-                                            {% if not stream.obs_overlay_token %}disabled{% endif %}>
+                                    <button class="btn btn-outline-secondary" type="button" onclick="testObsOverlay('anonymous')" {% if not stream.obs_overlay_token %}disabled{% endif %}>
                                         <i class="bi bi-eye"></i>
                                     </button>
                                 </div>
@@ -821,8 +865,8 @@
                             
                             <div class="d-flex gap-2 align-items-center mt-3">
                                 {% if not stream.obs_overlay_token %}
-                                <button class="btn btn-brand" onclick="generateObsToken()">
-                                    🔗 URL生成
+                                <button class="btn btn-outline-secondary" onclick="generateObsToken()">
+                                    URL生成
                                 </button>
                                 {% else %}
                                 <div class="alert alert-success mb-0 flex-grow-1" style="font-size: 13px;">
@@ -852,7 +896,7 @@
                                     </div>
                                     <div class="mb-3">
                                         <strong>4. クロマキー設定</strong>
-                                        <p class="mb-1 text-muted">フィルタ → + → クロマキー → 色を選択: 緑 (#00FF00)</p>
+                                        <p class="mb-1 text-muted">フィルタ → + → クロマキー → 色を選択: 緑</p>
                                     </div>
                                 </div>
                             </div>
@@ -869,7 +913,7 @@
                                         <div class="card-body text-center p-2">
                                             <i class="bi bi-person-fill text-primary"></i>
                                             <div class="fw-bold small">通常モード</div>
-                                            <div style="font-size: 11px; color: #666;">
+                                            <div style="font-size: 11px; color: var(--text-secondary);">
                                                 viewer: こんにちは<br>
                                                 streamer 😊
                                             </div>
@@ -881,7 +925,7 @@
                                         <div class="card-body text-center p-2">
                                             <i class="bi bi-incognito text-secondary"></i>
                                             <div class="fw-bold small">匿名モード</div>
-                                            <div style="font-size: 11px; color: #666;">
+                                            <div style="font-size: 11px; color: var(--text-secondary);">
                                                 こんにちは<br>
                                                 😊
                                             </div>
@@ -948,6 +992,132 @@
                 </p>
             </div>
 
+            <!-- Chat Management Tab -->
+            <div class="tab-content" id="chat-management">
+                <!-- Top Control Bar -->
+                <div class="chat-control-bar mb-3 p-3 bg-light rounded">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <div class="d-flex gap-2 align-items-center">
+                                <button class="btn btn-sm btn-outline-secondary" id="refresh-chat">
+                                    <i class="bi bi-arrow-clockwise"></i> 更新
+                                </button>
+                                <div class="form-check form-switch ms-3">
+                                    <input class="form-check-input" type="checkbox" id="auto-refresh-chat" checked>
+                                    <label class="form-check-label" for="auto-refresh-chat">自動更新</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <!-- Quick Stats -->
+                            <div class="d-flex justify-content-end gap-4 text-center">
+                                <div>
+                                    <div class="fs-5 fw-bold text-primary" id="total-messages">0</div>
+                                    <small class="text-muted">メッセージ</small>
+                                </div>
+                                <div>
+                                    <div class="fs-5 fw-bold text-success" id="active-users">0</div>
+                                    <small class="text-muted">ユーザー</small>
+                                </div>
+                                <div>
+                                    <div class="fs-5 fw-bold text-danger" id="deleted-messages">0</div>
+                                    <small class="text-muted">削除</small>
+                                </div>
+                                <div>
+                                    <div class="fs-5 fw-bold text-info" id="pinned-messages">0</div>
+                                    <small class="text-muted">ピン</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <!-- Chat Messages Section -->
+                    <div class="col-lg-7">
+                        <div class="settings-section">
+                            <div class="settings-header">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-chat-dots me-2"></i>チャットメッセージ
+                                </h5>
+                            </div>
+                            <div class="settings-body p-0">
+                                <!-- Chat messages container -->
+                                <div id="chat-messages-container" class="chat-messages-scroll">
+                                    <div class="text-center text-muted p-4">
+                                        <i class="bi bi-chat-dots" style="font-size: 48px;"></i>
+                                        <p class="mt-3">チャットメッセージを読み込み中...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Moderation Panel -->
+                    <div class="col-lg-5">
+                        <!-- NGワード管理 -->
+                        <div class="card mb-3">
+                            <div class="card-header bg-light border-bottom py-2">
+                                <h6 class="mb-0 text-dark"><i class="bi bi-shield-slash me-2"></i>NGワード管理</h6>
+                            </div>
+                            <div class="card-body p-3">
+                                <div class="input-group mb-2">
+                                    <input type="text" class="form-control form-control-sm" id="banned-words-input" 
+                                           placeholder="スパム, 迷惑行為 (カンマ区切り)">
+                                    <button class="btn btn-outline-secondary btn-sm" onclick="addBannedWords()">
+                                        <i class="bi bi-plus"></i> 追加
+                                    </button>
+                                </div>
+                                <div id="current-banned-words" class="ng-words-list">
+                                    <div class="text-muted small">読み込み中...</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- タイムアウト管理 -->
+                        <div class="card mb-3">
+                            <div class="card-header bg-light border-bottom py-2">
+                                <h6 class="mb-0 text-dark"><i class="bi bi-clock me-2"></i>タイムアウト管理</h6>
+                            </div>
+                            <div class="card-body p-3">
+                                <div class="mb-2">
+                                    <textarea class="form-control form-control-sm" id="timeout-usernames" rows="2" placeholder="ユーザー名をカンマ区切りで入力（例: user1, user2, user3）"></textarea>
+                                </div>
+                                <div class="row g-2 mb-2">
+                                    <div class="col-6">
+                                        <select class="form-select form-select-sm" id="timeout-duration">
+                                            <option value="5">5分</option>
+                                            <option value="30">30分</option>
+                                            <option value="60">1時間</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-6">
+                                        <button class="btn btn-outline-secondary btn-sm w-100" onclick="timeoutUsers()">
+                                            <i class="bi bi-clock me-1"></i>タイムアウト実行
+                                        </button>
+                                    </div>
+                                </div>
+                                <div id="active-timeouts" class="timeout-list">
+                                    <div class="text-muted small">タイムアウト中のユーザーはいません</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- クイックアクション -->
+                        <div class="card">
+                            <div class="card-header bg-light border-bottom py-2">
+                                <h6 class="mb-0 text-dark"><i class="bi bi-gear me-2"></i>管理操作</h6>
+                            </div>
+                            <div class="card-body p-3">
+                                <button class="btn btn-outline-secondary btn-sm w-100" onclick="exportModerationLog()">
+                                    <i class="bi bi-download me-1"></i>ログ出力
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Stream Details Tab -->
             <div class="tab-content" id="stream-details">
                 <div class="row">
@@ -962,9 +1132,9 @@
                             <label class="form-label">接続状態</label>
                             <div class="form-control" style="background: var(--light-bg);">
                                 {% if stream.status == 'live' %}
-                                    <span style="color: #4caf50;">接続中</span>
+                                    <span style="color: var(--text-secondary);">接続中</span>
                                 {% else %}
-                                    <span style="color: #666;">未接続</span>
+                                    <span style="color: var(--text-secondary);">未接続</span>
                                 {% endif %}
                             </div>
                         </div>
@@ -1235,5 +1405,503 @@ function testObsOverlay(mode) {
         alert('まずURLを生成してください');
     }
 }
+
+// Chat Management Functions
+let chatRefreshInterval = null;
+let chatMessages = [];
+let uniqueUsers = new Set();
+
+function loadChatMessages() {
+    fetch(`/api/chat/history/{{ stream.stream_id }}/`, {
+        method: 'GET',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.messages) {
+            chatMessages = data.messages;
+            displayChatMessages();
+            updateChatStatistics();
+        }
+    })
+    .catch(error => {
+        console.error('Error loading chat messages:', error);
+    });
+}
+
+function displayChatMessages() {
+    const container = document.getElementById('chat-messages-container');
+    if (!container) return;
+    
+    if (chatMessages.length === 0) {
+        container.innerHTML = `
+            <div class="text-center text-muted p-4">
+                <i class="bi bi-chat-dots" style="font-size: 36px;"></i>
+                <p class="mt-2">まだメッセージがありません</p>
+            </div>
+        `;
+        updateChatStatistics();
+        return;
+    }
+    
+    container.innerHTML = '';
+    uniqueUsers.clear();
+    
+    chatMessages.forEach(msg => {
+        uniqueUsers.add(msg.username);
+        const messageEl = document.createElement('div');
+        messageEl.className = `chat-message${msg.is_pinned ? ' pinned' : ''}`;
+        messageEl.dataset.messageId = msg.id;
+        
+        const isPinned = msg.is_pinned ? '<i class="bi bi-pin-angle-fill text-primary me-1"></i>' : '';
+        
+        messageEl.innerHTML = `
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="flex-grow-1">
+                    <div class="d-flex align-items-center">
+                        ${isPinned}
+                        <strong class="me-2">${msg.username}</strong>
+                        <small class="text-muted">${new Date(msg.timestamp).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}</small>
+                    </div>
+                    <div class="mt-1">${msg.message}</div>
+                </div>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-three-dots"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="#" onclick="togglePin(${msg.id})">
+                            <i class="bi bi-pin${msg.is_pinned ? '-fill' : ''} me-2"></i>${msg.is_pinned ? 'ピン解除' : 'ピン留め'}
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="#" onclick="deleteMessage(${msg.id})">
+                            <i class="bi bi-trash me-2"></i>削除
+                        </a></li>
+                    </ul>
+                </div>
+            </div>
+        `;
+        
+        container.appendChild(messageEl);
+    });
+    
+    // Update statistics
+    updateChatStatistics();
+    
+    // Scroll to bottom
+    container.scrollTop = container.scrollHeight;
+}
+
+function updateChatStatistics() {
+    document.getElementById('total-messages').textContent = chatMessages.length;
+    document.getElementById('active-users').textContent = uniqueUsers.size;
+    
+    const deletedCount = chatMessages.filter(msg => msg.is_deleted).length;
+    document.getElementById('deleted-messages').textContent = deletedCount;
+    
+    const pinnedCount = chatMessages.filter(msg => msg.is_pinned).length;
+    document.getElementById('pinned-messages').textContent = pinnedCount;
+}
+
+function togglePin(messageId) {
+    fetch(`/api/chat/moderate/${messageId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: 'action=pin',
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            loadChatMessages();
+        } else {
+            alert('操作に失敗しました: ' + (data.error || '不明なエラー'));
+        }
+    })
+    .catch(error => {
+        console.error('Error toggling pin:', error);
+    });
+}
+
+function deleteMessage(messageId) {
+    if (!confirm('このメッセージを削除しますか？')) return;
+    
+    fetch(`/api/chat/moderate/${messageId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: 'action=delete',
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            loadChatMessages();
+        } else {
+            alert('削除に失敗しました: ' + (data.error || '不明なエラー'));
+        }
+    })
+    .catch(error => {
+        console.error('Error deleting message:', error);
+    });
+}
+
+// Chat management event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Load chat messages when chat tab is opened
+    const chatTab = document.querySelector('[data-tab="chat-management"]');
+    if (chatTab) {
+        const originalClickHandler = chatTab.onclick;
+        chatTab.onclick = function(e) {
+            if (originalClickHandler) originalClickHandler.call(this, e);
+            loadChatMessages();
+            
+            // Start auto-refresh if enabled
+            const autoRefresh = document.getElementById('auto-refresh-chat');
+            if (autoRefresh && autoRefresh.checked) {
+                startChatAutoRefresh();
+            }
+        };
+    }
+    
+    // Refresh button - now refreshes both chat messages and moderation data
+    const refreshBtn = document.getElementById('refresh-chat');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', function() {
+            loadChatMessages();
+            refreshModerationData();
+        });
+    }
+    
+    // Auto-refresh toggle
+    const autoRefreshToggle = document.getElementById('auto-refresh-chat');
+    if (autoRefreshToggle) {
+        autoRefreshToggle.addEventListener('change', function() {
+            if (this.checked) {
+                startChatAutoRefresh();
+            } else {
+                stopChatAutoRefresh();
+            }
+        });
+    }
+    
+});
+
+function startChatAutoRefresh() {
+    stopChatAutoRefresh();
+    chatRefreshInterval = setInterval(loadChatMessages, 5000); // Refresh every 5 seconds
+}
+
+function stopChatAutoRefresh() {
+    if (chatRefreshInterval) {
+        clearInterval(chatRefreshInterval);
+        chatRefreshInterval = null;
+    }
+}
+
+// Moderation Functions
+function addBannedWords() {
+    const wordsInput = document.getElementById('banned-words-input');
+    const words = wordsInput.value.trim();
+    
+    if (!words) {
+        alert('NGワードを入力してください');
+        return;
+    }
+    
+    fetch(`/api/chat/banned-words/{{ stream.stream_id }}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ words: words }),
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            wordsInput.value = '';
+            loadBannedWords();
+            alert(data.message);
+        } else {
+            alert('NGワード追加に失敗しました: ' + (data.error || '不明なエラー'));
+        }
+    })
+    .catch(error => {
+        console.error('Error adding banned words:', error);
+        alert('NGワード追加に失敗しました');
+    });
+}
+
+function loadBannedWords() {
+    fetch(`/api/chat/banned-words/{{ stream.stream_id }}/`, {
+        method: 'GET',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        const container = document.getElementById('current-banned-words');
+        
+        if (data.banned_words && data.banned_words.length > 0) {
+            container.innerHTML = '';
+            data.banned_words.forEach(word => {
+                const wordEl = document.createElement('span');
+                wordEl.className = 'badge bg-secondary me-1 mb-1 d-inline-flex align-items-center';
+                wordEl.style.fontSize = '10px';
+                wordEl.innerHTML = `
+                    ${word.word}
+                    <button class="btn btn-sm ms-1 p-0 border-0 bg-transparent" onclick="removeBannedWord(${word.id})" title="削除">
+                        <i class="bi bi-x text-white" style="font-size: 12px;"></i>
+                    </button>
+                `;
+                container.appendChild(wordEl);
+            });
+        } else {
+            container.innerHTML = '<div class="text-muted small">NGワードなし</div>';
+        }
+    })
+    .catch(error => {
+        console.error('Error loading banned words:', error);
+        document.getElementById('current-banned-words').innerHTML = 
+            '<div class="text-danger small">読み込みエラー</div>';
+    });
+}
+
+function removeBannedWord(wordId) {
+    if (!confirm('このNGワードを削除しますか？')) return;
+    
+    fetch(`/api/chat/banned-words/remove/${wordId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            loadBannedWords();
+            alert(data.message);
+        } else {
+            alert('削除に失敗しました: ' + (data.error || '不明なエラー'));
+        }
+    })
+    .catch(error => {
+        console.error('Error removing banned word:', error);
+        alert('削除に失敗しました');
+    });
+}
+
+function timeoutUsers() {
+    const usernames = document.getElementById('timeout-usernames').value.trim();
+    const duration = parseInt(document.getElementById('timeout-duration').value);
+    
+    if (!usernames) {
+        alert('ユーザー名を入力してください');
+        return;
+    }
+    
+    // カンマ区切りでユーザー名を分割
+    const usernameList = usernames.split(',').map(name => name.trim()).filter(name => name);
+    
+    if (usernameList.length === 0) {
+        alert('有効なユーザー名を入力してください');
+        return;
+    }
+    
+    // 複数ユーザーのタイムアウトを並行実行
+    const timeoutPromises = usernameList.map(username => {
+        return fetch(`/api/chat/timeout/{{ stream.stream_id }}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ 
+                username: username, 
+                duration: duration,
+                reason: 'Manual timeout by streamer'
+            }),
+            credentials: 'same-origin'
+        })
+        .then(response => response.json())
+        .then(data => ({ username, success: data.success, message: data.message, error: data.error }));
+    });
+    
+    Promise.all(timeoutPromises)
+    .then(results => {
+        const successful = results.filter(r => r.success);
+        const failed = results.filter(r => !r.success);
+        
+        let message = '';
+        if (successful.length > 0) {
+            message += `${successful.length}人のユーザーをタイムアウトしました\n`;
+        }
+        if (failed.length > 0) {
+            message += `${failed.length}人のタイムアウトに失敗しました:\n`;
+            failed.forEach(f => {
+                message += `- ${f.username}: ${f.error}\n`;
+            });
+        }
+        
+        document.getElementById('timeout-usernames').value = '';
+        loadActiveTimeouts();
+        alert(message);
+    })
+    .catch(error => {
+        console.error('Error timing out users:', error);
+        alert('タイムアウト実行に失敗しました');
+    });
+}
+
+function loadActiveTimeouts() {
+    fetch(`/api/chat/timeouts/{{ stream.stream_id }}/`, {
+        method: 'GET',
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        const container = document.getElementById('active-timeouts');
+        
+        if (data.timeouts && data.timeouts.length > 0) {
+            let html = '';
+            data.timeouts.forEach(timeout => {
+                const expiresAt = new Date(timeout.expires_at);
+                const now = new Date();
+                const remainingMinutes = Math.ceil((expiresAt - now) / (1000 * 60));
+                
+                html += `
+                    <div class="d-flex justify-content-between align-items-center p-2 border-bottom">
+                        <div>
+                            <strong>${timeout.username}</strong>
+                            <div class="text-muted small">${timeout.reason}</div>
+                            <div class="text-muted small">残り ${remainingMinutes} 分</div>
+                        </div>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="removeTimeout(${timeout.id})">
+                            解除
+                        </button>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = '<div class="text-muted small">タイムアウト中のユーザーはいません</div>';
+        }
+    })
+    .catch(error => {
+        console.error('Error loading timeouts:', error);
+        const container = document.getElementById('active-timeouts');
+        container.innerHTML = '<div class="text-danger small">タイムアウトの読み込みに失敗しました</div>';
+    });
+}
+
+function removeTimeout(timeoutId) {
+    if (!confirm('このタイムアウトを解除しますか？')) return;
+    
+    fetch(`/api/chat/timeout/remove/${timeoutId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            loadActiveTimeouts();
+            alert(data.message);
+        } else {
+            alert('タイムアウト解除に失敗しました: ' + (data.error || '不明なエラー'));
+        }
+    })
+    .catch(error => {
+        console.error('Error removing timeout:', error);
+        alert('タイムアウト解除に失敗しました');
+    });
+}
+
+function refreshModerationData() {
+    loadBannedWords();
+    loadActiveTimeouts();
+}
+
+// Load moderation data when chat management tab is opened
+document.addEventListener('DOMContentLoaded', function() {
+    const chatTab = document.querySelector('[data-tab="chat-management"]');
+    if (chatTab) {
+        const originalClickHandler = chatTab.onclick;
+        chatTab.onclick = function(e) {
+            if (originalClickHandler) originalClickHandler.call(this, e);
+            
+            // Load moderation data
+            setTimeout(() => {
+                refreshModerationData();
+            }, 100);
+        };
+    }
+});
+
+// 管理操作機能
+function exportModerationLog() {
+    // モデレーションログをCSV形式でエクスポート
+    const streamId = '{{ stream.stream_id }}';
+    const currentDate = new Date().toISOString().split('T')[0];
+    
+    // 現在のNGワードとタイムアウトデータを収集
+    Promise.all([
+        fetch(`/api/chat/banned-words/${streamId}/`, { credentials: 'same-origin' }),
+        fetch(`/api/chat/timeouts/${streamId}/`, { credentials: 'same-origin' })
+    ])
+    .then(responses => Promise.all(responses.map(r => r.json())))
+    .then(([bannedWordsData, timeoutsData]) => {
+        let csvContent = "data:text/csv;charset=utf-8,";
+        
+        // ヘッダー
+        csvContent += "種別,内容,作成日時,ステータス\n";
+        
+        // NGワード
+        if (bannedWordsData.banned_words) {
+            bannedWordsData.banned_words.forEach(word => {
+                csvContent += `NGワード,"${word.word}","${word.created_at}",アクティブ\n`;
+            });
+        }
+        
+        // タイムアウト
+        if (timeoutsData.timeouts) {
+            timeoutsData.timeouts.forEach(timeout => {
+                const expiresAt = new Date(timeout.expires_at).toLocaleString('ja-JP');
+                csvContent += `タイムアウト,"${timeout.username} (${timeout.duration}分)","${timeout.created_at}","${expiresAt}まで"\n`;
+            });
+        }
+        
+        // ダウンロード
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `moderation_log_${currentDate}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        alert('モデレーションログをダウンロードしました');
+    })
+    .catch(error => {
+        console.error('Error exporting log:', error);
+        alert('ログの出力に失敗しました');
+    });
+}
+
 </script>
 {% endblock %}

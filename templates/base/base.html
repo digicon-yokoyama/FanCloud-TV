@@ -196,6 +196,11 @@
             color: #333 !important;
         }
         
+        /* Hide dropdown toggle arrow for user menu */
+        .dropdown-toggle::after {
+            display: none;
+        }
+        
         .dropdown-header {
             font-size: 0.75rem;
             text-transform: uppercase;
@@ -300,7 +305,7 @@
                     </div>
                     
                     <div class="dropdown">
-                        <button class="btn btn-link dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <button class="btn btn-link dropdown-toggle" type="button" data-bs-toggle="dropdown" style="border: none;">
                             <img src="https://ui-avatars.com/api/?name={{ user.username|urlencode }}&size=32&rounded=true" 
                                  class="rounded-circle" width="32" height="32" alt="{{ user.username }}">
                         </button>

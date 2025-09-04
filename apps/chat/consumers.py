@@ -215,7 +215,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             user_can_chat = await self.check_user_permissions()
             if not user_can_chat:
                 await self.send(text_data=json.dumps({
-                    'error': 'チャットする権限がありません'
+                    'error': 'チャット機能が配信者によりロックされています。'
                 }))
                 return
 
@@ -223,7 +223,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             filtered_message = await self.filter_message(message)
             if not filtered_message:
                 await self.send(text_data=json.dumps({
-                    'error': 'メッセージが制限されています'
+                    'error': '不適切なワードです。'
                 }))
                 return
 
@@ -431,9 +431,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
     def check_user_permissions(self):
         """Check if user can send messages."""
         try:
+            from apps.chat.views import is_user_timed_out
+            
             # TenantResolverMiddlewareが既にスキーマを設定済み
-            # For now, all authenticated users can chat
-            # This can be extended with ban/timeout checks
+            if not self.user or not self.user.is_authenticated:
+                return False
+            
+            # Check if user is timed out
+            timeout = is_user_timed_out(self.user)
+            if timeout:
+                return False
+            
             return True
         except Exception:
             return False
@@ -441,6 +449,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def filter_message(self, message):
         """Filter message content for spam/inappropriate content."""
+        from apps.chat.views import check_banned_words
+        
         # Basic filtering - can be extended with proper moderation
         if len(message.strip()) == 0:
             return None
@@ -451,6 +461,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
         # Basic spam detection (repeated characters)
         if len(set(filtered.lower())) < 3 and len(filtered) > 10:
             return None
+
+        # Check for banned words
+        contains_banned_word, banned_word = check_banned_words(filtered)
+        if contains_banned_word:
+            return None  # Block message with banned words
 
         return filtered
     

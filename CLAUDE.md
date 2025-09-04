@@ -187,7 +187,7 @@ docker compose exec web python manage.py seed_content --reset --count 15
 - `apps.accounts.permissions`の権限デコレータを使用
 - 権限チェック用テンプレートコンテキストプロセッサの活用
 - テストアカウントで異なるユーザーロールをテスト
-- 詳細な権限システムドキュメントは`docs/PERMISSIONS.md`を参照
+- 詳細な権限システムドキュメントは`docs/function/PERMISSIONS.md`を参照
 
 ## 禁止事項
 
@@ -202,3 +202,40 @@ docker compose exec web python manage.py seed_content --reset --count 15
 - 機能を説明する汎用的で中立的な命名を使用する
 - 例: `youtube_time` → `readable_time`, `google_auth` → `oauth_auth`
 - コメントや説明で「○○風の」という表現も避け、機能自体を説明する
+
+### UIデザインガイドライン
+- **NEVER use overly colorful designs that impair readability**
+- 管理画面やダッシュボードUIでは落ち着いた配色を使用する
+- カードヘッダーには原色ではなく`bg-light`（淡いグレー）を使用する
+- ボタンはカラフルな色ではなく`btn-outline-secondary`（グレー系）を基本とする
+- バッジやラベルも`bg-secondary`（グレー）を基本とし、重要度に応じて控えめに色を使用する
+- 全体的な視認性とプロフェッショナル感を重視し、目に優しいデザインを心がける
+- 色による機能区別が必要な場合は、アイコンやテキストでの補完も併用する
+
+## ドキュメント構成
+
+このプロジェクトのドキュメントは以下の構成で整理されています：
+
+### `docs/` ディレクトリ構成
+
+```
+docs/
+├── README.md              # プロジェクト概要とクイックスタート
+├── ROADMAP.md            # 全体開発計画とフェーズ管理
+├── FILE_STRUCTURE.md     # コードベース構造とアーキテクチャ
+├── function/             # 機能仕様・設計ドキュメント
+│   ├── CHAT_FLOW.md      # チャットシステムのフローと仕様
+│   ├── OBS_OVERLAY.md    # OBS連携機能の詳細設計
+│   ├── PERMISSIONS.md    # 権限システムの詳細仕様
+│   └── TEMPLATE_FILTERS.md # テンプレートフィルターの仕様
+└── issue/                # 問題・修正事項の管理
+    ├── Fix_CHAT_INPUT_ISSUE.md   # チャット入力問題の修正記録
+    └── Fix_template_ISSUES.md    # テンプレート関連問題の修正記録
+```
+
+### ドキュメント参照ガイドライン
+
+- **機能実装時**: `docs/function/` 配下の該当ファイルを参照
+- **問題修正時**: `docs/issue/` 配下の関連ファイルを確認
+- **全体把握**: `docs/README.md` と `docs/ROADMAP.md` を参照
+- **アーキテクチャ理解**: `docs/FILE_STRUCTURE.md` を参照
