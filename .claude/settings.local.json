@@ -45,7 +45,8 @@
       "Read(/var/folders/rn/d61zm0pj551342190c1qzvpw0000gn/T/TemporaryItems/NSIRD_screencaptureui_vdIlEW/**)",
       "Read(//var/folders/rn/d61zm0pj551342190c1qzvpw0000gn/T/TemporaryItems/NSIRD_screencaptureui_dH5hsD/**)",
       "Read(//var/folders/rn/d61zm0pj551342190c1qzvpw0000gn/T/TemporaryItems/NSIRD_screencaptureui_FYR1Vh/**)",
-      "Bash(npm run lint)"
+      "Bash(npm run lint)",
+      "Read(//var/folders/rn/d61zm0pj551342190c1qzvpw0000gn/T/TemporaryItems/NSIRD_screencaptureui_JodvBY/**)"
     ],
     "deny": [],
     "ask": []

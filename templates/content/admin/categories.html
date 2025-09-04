@@ -1,0 +1,185 @@
+{% extends "base/base.html" %}
+{% load static %}
+
+{% block title %}カテゴリ管理 - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.category-card {
+    transition: all 0.3s ease;
+    border: 1px solid #dee2e6;
+}
+
+.category-card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.category-color {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 8px;
+}
+
+.stats-card {
+    background: #6c757d;
+    color: white;
+    border: none;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #6c757d;
+}
+
+.empty-state i {
+    font-size: 64px;
+    margin-bottom: 20px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="bi bi-tags me-2"></i>カテゴリ管理
+        </h2>
+        <a href="{% url 'content:create_category' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-plus-lg me-1"></i>新しいカテゴリを追加
+        </a>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4 col-sm-6">
+            <div class="card stats-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div>
+                            <h4 class="mb-0">{{ stats.total_categories }}</h4>
+                            <small>総カテゴリ数</small>
+                        </div>
+                        <i class="bi bi-tags ms-auto" style="font-size: 2rem; opacity: 0.5;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 col-sm-6">
+            <div class="card bg-secondary text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div>
+                            <h4 class="mb-0">{{ stats.active_categories }}</h4>
+                            <small>アクティブ</small>
+                        </div>
+                        <i class="bi bi-check-circle ms-auto" style="font-size: 2rem; opacity: 0.5;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 col-sm-6">
+            <div class="card bg-secondary text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div>
+                            <h4 class="mb-0">{{ stats.inactive_categories }}</h4>
+                            <small>非アクティブ</small>
+                        </div>
+                        <i class="bi bi-x-circle ms-auto" style="font-size: 2rem; opacity: 0.5;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Categories List -->
+    {% if categories %}
+        <div class="row">
+            {% for category in categories %}
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card category-card h-100">
+                        <div class="card-body">
+                            <!-- Category Header -->
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <div class="d-flex align-items-center">
+                                    <span class="category-color" style="background-color: {{ category.color }};"></span>
+                                    <h6 class="mb-0 fw-bold">{{ category.name }}</h6>
+                                </div>
+                                <div>
+                                    {% if category.is_active %}
+                                        <span class="badge bg-secondary">アクティブ</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">非アクティブ</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Description -->
+                            {% if category.description %}
+                                <p class="text-muted small mb-3">{{ category.description }}</p>
+                            {% else %}
+                                <p class="text-muted small mb-3">説明なし</p>
+                            {% endif %}
+
+                            <!-- Statistics -->
+                            <div class="mb-3">
+                                <small class="text-muted">
+                                    <i class="bi bi-collection-play me-1"></i>
+                                    {{ category.videos.count }} 個の動画
+                                </small>
+                            </div>
+
+                            <!-- Actions -->
+                            <div class="d-flex gap-2 mt-auto">
+                                <a href="{% url 'content:edit_category' category.id %}" 
+                                   class="btn btn-sm btn-outline-secondary flex-fill">
+                                    <i class="bi bi-pencil me-1"></i>編集
+                                </a>
+                                {% if category.videos.count == 0 %}
+                                    <form method="post" action="{% url 'content:delete_category' category.id %}" 
+                                          class="flex-fill"
+                                          onsubmit="return confirm('カテゴリ「{{ category.name }}」を削除してよろしいですか？この操作は取り消せません。');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-danger w-100">
+                                            <i class="bi bi-trash me-1"></i>削除
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <button class="btn btn-sm btn-outline-danger flex-fill" disabled 
+                                            title="使用中のカテゴリは削除できません">
+                                        <i class="bi bi-trash me-1"></i>削除
+                                    </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <!-- Empty State -->
+        <div class="empty-state">
+            <i class="bi bi-tags"></i>
+            <h4>カテゴリがありません</h4>
+            <p class="mb-4">まだカテゴリが作成されていません。</p>
+            <a href="{% url 'content:create_category' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-plus-lg me-1"></i>最初のカテゴリを作成
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

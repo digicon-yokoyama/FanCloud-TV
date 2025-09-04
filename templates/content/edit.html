@@ -1,0 +1,496 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}動画情報編集 - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.edit-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.video-preview-section {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.video-player {
+    position: relative;
+    width: 100%;
+    padding-bottom: 56.25%; /* 16:9 aspect ratio */
+    background: #000;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.video-placeholder {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.video-placeholder i {
+    font-size: 4rem;
+    color: white;
+    opacity: 0.8;
+}
+
+.thumbnail-upload {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.thumbnail-preview {
+    position: relative;
+    width: 100%;
+    padding-bottom: 56.25%; /* 16:9 aspect ratio */
+    background: #f8f9fa;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 2px dashed #dee2e6;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.thumbnail-preview:hover {
+    border-color: #007bff;
+    background: #e9ecef;
+}
+
+.thumbnail-preview img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.thumbnail-placeholder {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #6c757d;
+}
+
+.video-info-form {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.edit-row {
+    min-height: 600px;
+}
+
+.left-column,
+.right-column {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.form-section {
+    margin-bottom: 2rem;
+}
+
+.form-section h5 {
+    color: #495057;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.tag-input-wrapper {
+    position: relative;
+}
+
+.tag-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    display: none;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.tag-suggestion {
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.tag-suggestion:hover {
+    background: #f8f9fa;
+}
+
+.existing-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.tag-badge {
+    background: #e9ecef;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.tag-badge .remove-tag {
+    cursor: pointer;
+    color: #6c757d;
+    transition: color 0.2s;
+}
+
+.tag-badge .remove-tag:hover {
+    color: #dc3545;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="edit-container">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3>
+                <i class="bi bi-pencil-square me-2"></i>動画情報編集
+            </h3>
+            <a href="{% url 'content:manage_videos' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>戻る
+            </a>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <form method="post" enctype="multipart/form-data" id="edit-form">
+            {% csrf_token %}
+            
+            <div class="row edit-row">
+                <!-- Left Column: Video Preview & Thumbnail -->
+                <div class="col-lg-7 left-column">
+                    <!-- Video Preview -->
+                    <div class="video-preview-section flex-grow-1">
+                        <h5 class="mb-3">
+                            <i class="bi bi-play-circle me-2"></i>動画プレビュー
+                        </h5>
+                        <div class="video-player">
+                            {% if video.playback_url %}
+                                <video controls style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
+                                    <source src="{{ video.playback_url }}" type="video/mp4">
+                                    お使いのブラウザは動画タグをサポートしていません。
+                                </video>
+                            {% else %}
+                                <div class="video-placeholder">
+                                    <div class="text-center">
+                                        <i class="bi bi-film"></i>
+                                        <p class="mt-3 mb-0">動画プレビューは現在利用できません</p>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Thumbnail Upload -->
+                    <div class="thumbnail-upload">
+                        <h5 class="mb-3">
+                            <i class="bi bi-image me-2"></i>サムネイル画像
+                        </h5>
+                        <div class="thumbnail-preview" onclick="document.getElementById('thumbnail-input').click()">
+                            {% if video.thumbnail_url %}
+                                <img src="{{ video.thumbnail_url }}" alt="サムネイル" id="thumbnail-preview-img">
+                            {% else %}
+                                <div class="thumbnail-placeholder" id="thumbnail-placeholder">
+                                    <i class="bi bi-cloud-upload" style="font-size: 2.5rem;"></i>
+                                    <p class="mt-2 mb-0">クリックしてサムネイルをアップロード</p>
+                                    <small>推奨: 1280x720px (16:9)</small>
+                                </div>
+                                <img src="" alt="サムネイル" id="thumbnail-preview-img" style="display: none;">
+                            {% endif %}
+                        </div>
+                        <input type="file" id="thumbnail-input" name="thumbnail" accept="image/*" style="display: none;">
+                        <small class="text-muted mt-2 d-block">
+                            対応形式: JPG, PNG, GIF (最大5MB)
+                        </small>
+                    </div>
+                </div>
+
+                <!-- Right Column: Video Information Form -->
+                <div class="col-lg-5 right-column">
+                    <!-- Video Information Form -->
+                    <div class="video-info-form">
+                        <div class="form-section">
+                            <h5>基本情報</h5>
+                            
+                            <div class="mb-3">
+                                <label for="title" class="form-label fw-bold">タイトル *</label>
+                                <input type="text" class="form-control" id="title" name="title" 
+                                       value="{{ video.title }}" maxlength="200" required>
+                                <small class="text-muted">{{ video.title|length }}/200文字</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="description" class="form-label fw-bold">説明</label>
+                                <textarea class="form-control" id="description" name="description" 
+                                          rows="6" maxlength="5000">{{ video.description|default:'' }}</textarea>
+                                <small class="text-muted">{{ video.description|length|default:0 }}/5000文字</small>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h5>タグ設定</h5>
+                            
+                            <div class="mb-3">
+                                <label for="tags" class="form-label fw-bold">タグ</label>
+                                <div class="tag-input-wrapper">
+                                    <input type="text" class="form-control" id="tags" name="tags" 
+                                           value="{% for tag in video.tags.all %}{{ tag.name }}{% if not forloop.last %}, {% endif %}{% endfor %}"
+                                           placeholder="タグを入力してEnter（最大10個）">
+                                    <div class="tag-suggestions" id="tag-suggestions"></div>
+                                </div>
+                                <small class="text-muted">
+                                    カンマまたはEnterキーで区切ってください
+                                </small>
+                                {% if video.tags.all %}
+                                <div class="existing-tags" id="existing-tags">
+                                    {% for tag in video.tags.all %}
+                                    <span class="tag-badge">
+                                        {{ tag.name }}
+                                        <i class="bi bi-x remove-tag" data-tag="{{ tag.name }}"></i>
+                                    </span>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h5>カテゴリと公開設定</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="category" class="form-label fw-bold">カテゴリ</label>
+                                    <select class="form-select" id="category" name="category">
+                                        <option value="">未選択</option>
+                                        {% for category in categories %}
+                                            <option value="{{ category.id }}" 
+                                                    {% if video.category.id == category.id %}selected{% endif %}>
+                                                {{ category.name }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="privacy" class="form-label fw-bold">公開設定</label>
+                                    <select class="form-select" id="privacy" name="privacy">
+                                        <option value="public" {% if video.privacy == 'public' %}selected{% endif %}>
+                                            <i class="bi bi-globe"></i> 公開
+                                        </option>
+                                        <option value="unlisted" {% if video.privacy == 'unlisted' %}selected{% endif %}>
+                                            <i class="bi bi-link-45deg"></i> 限定公開
+                                        </option>
+                                        <option value="private" {% if video.privacy == 'private' %}selected{% endif %}>
+                                            <i class="bi bi-lock"></i> 非公開
+                                        </option>
+                                        <option value="premium" {% if video.privacy == 'premium' %}selected{% endif %}>
+                                            <i class="bi bi-star"></i> プレミアム限定
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h5>詳細情報</h5>
+                            <div class="small text-muted">
+                                <div class="mb-1">
+                                    <i class="bi bi-calendar me-2"></i>
+                                    <strong>作成日:</strong> {{ video.created_at|date:"Y/m/d H:i" }}
+                                </div>
+                                {% if video.published_at %}
+                                <div class="mb-1">
+                                    <i class="bi bi-broadcast me-2"></i>
+                                    <strong>公開日:</strong> {{ video.published_at|date:"Y/m/d H:i" }}
+                                </div>
+                                {% endif %}
+                                {% if video.duration %}
+                                <div class="mb-1">
+                                    <i class="bi bi-clock me-2"></i>
+                                    <strong>再生時間:</strong> {{ video.duration_formatted }}
+                                </div>
+                                {% endif %}
+                                <div class="mb-1">
+                                    <i class="bi bi-info-circle me-2"></i>
+                                    <strong>ステータス:</strong> 
+                                    <span class="badge bg-{% if video.status == 'ready' %}success{% elif video.status == 'processing' %}warning{% else %}secondary{% endif %}">
+                                        {% if video.status == 'uploading' %}アップロード中
+                                        {% elif video.status == 'processing' %}処理中
+                                        {% elif video.status == 'ready' %}公開可能
+                                        {% elif video.status == 'failed' %}失敗
+                                        {% elif video.status == 'archived' %}アーカイブ済み
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-between align-items-center mt-auto pt-3">
+                            <button type="button" class="btn btn-outline-danger" onclick="confirmDelete()">
+                                <i class="bi bi-trash me-1"></i>動画を削除
+                            </button>
+                            <div>
+                                <a href="{% url 'content:watch' video.id %}" class="btn btn-outline-primary me-2" target="_blank">
+                                    <i class="bi bi-eye me-1"></i>プレビュー
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-lg me-1"></i>変更を保存
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">動画の削除確認</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>本当に「{{ video.title }}」を削除しますか？</p>
+                <p class="text-danger">
+                    <i class="bi bi-exclamation-triangle me-1"></i>
+                    この操作は取り消すことができません。
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <form method="post" action="{% url 'content:delete_video' video.id %}" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash me-1"></i>削除する
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Thumbnail preview
+document.getElementById('thumbnail-input').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        if (file.size > 5 * 1024 * 1024) {
+            alert('ファイルサイズは5MB以下にしてください。');
+            return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = document.getElementById('thumbnail-preview-img');
+            const placeholder = document.getElementById('thumbnail-placeholder');
+            
+            img.src = e.target.result;
+            img.style.display = 'block';
+            if (placeholder) {
+                placeholder.style.display = 'none';
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
+// Character counter
+document.getElementById('title').addEventListener('input', function() {
+    const length = this.value.length;
+    this.nextElementSibling.textContent = `${length}/200文字`;
+});
+
+document.getElementById('description').addEventListener('input', function() {
+    const length = this.value.length;
+    this.nextElementSibling.textContent = `${length}/5000文字`;
+});
+
+// Tag management
+const tagsInput = document.getElementById('tags');
+const existingTags = document.getElementById('existing-tags');
+
+// Remove tag functionality
+document.querySelectorAll('.remove-tag').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const tagName = this.dataset.tag;
+        const currentTags = tagsInput.value.split(',').map(t => t.trim()).filter(t => t);
+        const newTags = currentTags.filter(t => t !== tagName);
+        tagsInput.value = newTags.join(', ');
+        this.parentElement.remove();
+    });
+});
+
+// Delete confirmation
+function confirmDelete() {
+    const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    modal.show();
+}
+
+// Form validation
+document.getElementById('edit-form').addEventListener('submit', function(e) {
+    const title = document.getElementById('title').value.trim();
+    if (!title) {
+        e.preventDefault();
+        alert('タイトルは必須です。');
+        return false;
+    }
+});
+</script>
+{% endblock %}

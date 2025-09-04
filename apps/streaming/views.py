@@ -21,19 +21,19 @@ import uuid
 def home(request):
     """Homepage with live streams and recent videos."""
     # Get live streams
-    live_streams = Stream.objects.filter(status='live', privacy='public')[:8]
+    live_streams = Stream.objects.filter(status='live', privacy='public')[:10]
     
     # Get trending videos
     trending_videos = Video.objects.filter(
-        status='ready', 
+        status='ready',
         privacy__in=['public', 'unlisted']
-    ).order_by('-view_count')[:8]
+    ).order_by('-view_count')[:10]
     
     # Get recent videos
     recent_videos = Video.objects.filter(
         status='ready',
         privacy__in=['public', 'unlisted']
-    ).order_by('-published_at')[:8]
+    ).order_by('-published_at')[:10]
     
     # Get subscription videos for authenticated users
     subscription_videos = []
@@ -44,15 +44,54 @@ def home(request):
             uploader__in=following_users,
             status='ready',
             privacy__in=['public', 'unlisted']
-        ).order_by('-published_at')[:8]
+        ).order_by('-published_at')[:10]
+    
+    # Get recommended videos based on user preferences
+    videos_base = Video.objects.filter(
+        status='ready',
+        privacy__in=['public', 'unlisted']
+    )
+    recommended_videos = get_recommended_videos(request.user, videos_base)[:10]
     
     context = {
         'live_streams': live_streams,
         'trending_videos': trending_videos,
         'recent_videos': recent_videos,
         'subscription_videos': subscription_videos,
+        'recommended_videos': recommended_videos,
     }
     return render(request, 'streaming/home.html', context)
+
+
+def get_recommended_videos(user, videos_base):
+    """Get recommended videos based on user preferences and viewing history."""
+    if not user.is_authenticated:
+        # For anonymous users, return popular videos from different categories
+        return videos_base.order_by('-view_count', '-like_count')
+    
+    # For authenticated users, use simple recommendation logic
+    recommended = videos_base.exclude(uploader=user)
+    
+    # Get user's liked video categories
+    from apps.content.models import VideoLike
+    liked_categories = VideoLike.objects.filter(
+        user=user, 
+        is_like=True
+    ).values_list('video__category', flat=True).distinct()
+    
+    if liked_categories:
+        # Prioritize videos from liked categories
+        category_videos = recommended.filter(category__in=liked_categories)
+        other_videos = recommended.exclude(category__in=liked_categories)
+        
+        # Mix category-based and popular videos
+        recommended_list = list(category_videos.order_by('-view_count')[:6])
+        recommended_list.extend(list(other_videos.order_by('-view_count')[:4]))
+        
+        return recommended_list
+    else:
+        # Fallback to popular videos
+        return recommended.order_by('-view_count', '-like_count')
 
 
 def live_streams(request):

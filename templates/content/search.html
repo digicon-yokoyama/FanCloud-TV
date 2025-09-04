@@ -64,12 +64,64 @@
 
 {% block content %}
 <div class="container mt-4">
-    <!-- Search Header -->
+    <!-- Advanced Search Form -->
     <div class="search-results-header">
+        <form method="GET" class="mb-3">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label for="search-input" class="form-label">キーワード検索</label>
+                    <input type="text" id="search-input" name="q" class="form-control" 
+                           placeholder="タイトル、説明、アップロード者を検索..." 
+                           value="{{ search_query|default:'' }}">
+                </div>
+                <div class="col-md-4">
+                    <label for="tags-input" class="form-label">タグ検索</label>
+                    <input type="text" id="tags-input" name="tags" class="form-control" 
+                           placeholder="タグをカンマで区切って入力..." 
+                           value="{{ tags_query|default:'' }}">
+                </div>
+                <div class="col-md-2">
+                    <label for="category-select" class="form-label">カテゴリ</label>
+                    <select name="category" id="category-select" class="form-select">
+                        <option value="all" {% if not current_category or current_category == 'all' %}selected{% endif %}>すべて</option>
+                        {% for category in categories %}
+                            <option value="{{ category.id }}" {% if current_category == category.id|stringformat:'s' %}selected{% endif %}>
+                                {{ category.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-search"></i> 検索
+                        </button>
+                        <a href="{% url 'content:search' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-clockwise"></i> リセット
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <!-- Preserve other filters -->
+            <input type="hidden" name="sort" value="{{ current_sort }}">
+            <input type="hidden" name="duration" value="{{ current_duration }}">
+            <input type="hidden" name="upload_date" value="{{ current_upload_date }}">
+        </form>
+
+        <!-- Search Results Summary -->
         <div class="d-flex justify-content-between align-items-center">
             <div>
-                {% if search_query %}
-                    <h4 class="mb-1">「{{ search_query }}」の検索結果</h4>
+                {% if search_query or tags_query %}
+                    <h4 class="mb-1">
+                        {% if search_query and tags_query %}
+                            「{{ search_query }}」「{{ tags_query }}」の検索結果
+                        {% elif search_query %}
+                            「{{ search_query }}」の検索結果
+                        {% else %}
+                            タグ「{{ tags_query }}」の検索結果
+                        {% endif %}
+                    </h4>
                     <div class="results-stats">
                         {{ total_results|intcomma }}件の動画が見つかりました
                     </div>
@@ -81,6 +133,21 @@
                 {% endif %}
             </div>
         </div>
+
+        <!-- Popular Tags -->
+        {% if popular_tags and not search_query and not tags_query %}
+        <div class="mt-3">
+            <h6>人気のタグ:</h6>
+            <div class="d-flex flex-wrap gap-2">
+                {% for tag in popular_tags %}
+                    <a href="?tags={{ tag.name }}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-tag me-1"></i>{{ tag.name }}
+                        <span class="badge bg-secondary ms-1">{{ tag.video_count }}</span>
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
     </div>
 
     <div class="row">
@@ -95,12 +162,12 @@
                 <div class="filter-group">
                     <div class="filter-label">カテゴリ</div>
                     <div class="d-flex flex-wrap">
-                        <a href="?q={{ search_query }}&sort={{ current_sort }}&duration={{ current_duration }}&upload_date={{ current_upload_date }}" 
+                        <a href="?q={{ search_query }}&tags={{ tags_query }}&sort={{ current_sort }}&duration={{ current_duration }}&upload_date={{ current_upload_date }}" 
                            class="btn btn-sm btn-outline-secondary btn-filter {% if not current_category or current_category == 'all' %}active{% endif %}">
                             すべて
                         </a>
                         {% for category in categories %}
-                            <a href="?q={{ search_query }}&category={{ category.id }}&sort={{ current_sort }}&duration={{ current_duration }}&upload_date={{ current_upload_date }}" 
+                            <a href="?q={{ search_query }}&tags={{ tags_query }}&category={{ category.id }}&sort={{ current_sort }}&duration={{ current_duration }}&upload_date={{ current_upload_date }}" 
                                class="btn btn-sm btn-outline-secondary btn-filter {% if current_category == category.id|stringformat:'s' %}active{% endif %}">
                                 {{ category.name }}
                             </a>
@@ -112,19 +179,19 @@
                 <div class="filter-group">
                     <div class="filter-label">動画の長さ</div>
                     <div class="d-flex flex-wrap">
-                        <a href="?q={{ search_query }}&category={{ current_category }}&sort={{ current_sort }}&upload_date={{ current_upload_date }}" 
+                        <a href="?q={{ search_query }}&tags={{ tags_query }}&category={{ current_category }}&sort={{ current_sort }}&upload_date={{ current_upload_date }}" 
                            class="btn btn-sm btn-outline-secondary btn-filter {% if current_duration == 'any' %}active{% endif %}">
                             すべて
                         </a>
-                        <a href="?q={{ search_query }}&category={{ current_category }}&duration=short&sort={{ current_sort }}&upload_date={{ current_upload_date }}" 
+                        <a href="?q={{ search_query }}&tags={{ tags_query }}&category={{ current_category }}&duration=short&sort={{ current_sort }}&upload_date={{ current_upload_date }}" 
                            class="btn btn-sm btn-outline-secondary btn-filter {% if current_duration == 'short' %}active{% endif %}">
                             4分未満
                         </a>
-                        <a href="?q={{ search_query }}&category={{ current_category }}&duration=medium&sort={{ current_sort }}&upload_date={{ current_upload_date }}" 
+                        <a href="?q={{ search_query }}&tags={{ tags_query }}&category={{ current_category }}&duration=medium&sort={{ current_sort }}&upload_date={{ current_upload_date }}" 
                            class="btn btn-sm btn-outline-secondary btn-filter {% if current_duration == 'medium' %}active{% endif %}">
                             4-20分
                         </a>
-                        <a href="?q={{ search_query }}&category={{ current_category }}&duration=long&sort={{ current_sort }}&upload_date={{ current_upload_date }}" 
+                        <a href="?q={{ search_query }}&tags={{ tags_query }}&category={{ current_category }}&duration=long&sort={{ current_sort }}&upload_date={{ current_upload_date }}" 
                            class="btn btn-sm btn-outline-secondary btn-filter {% if current_duration == 'long' %}active{% endif %}">
                             20分以上
                         </a>
@@ -135,27 +202,27 @@
                 <div class="filter-group">
                     <div class="filter-label">アップロード日</div>
                     <div class="d-flex flex-wrap">
-                        <a href="?q={{ search_query }}&category={{ current_category }}&duration={{ current_duration }}&sort={{ current_sort }}" 
+                        <a href="?q={{ search_query }}&tags={{ tags_query }}&category={{ current_category }}&duration={{ current_duration }}&sort={{ current_sort }}" 
                            class="btn btn-sm btn-outline-secondary btn-filter {% if current_upload_date == 'any' %}active{% endif %}">
                             すべて
                         </a>
-                        <a href="?q={{ search_query }}&category={{ current_category }}&duration={{ current_duration }}&upload_date=hour&sort={{ current_sort }}" 
+                        <a href="?q={{ search_query }}&tags={{ tags_query }}&category={{ current_category }}&duration={{ current_duration }}&upload_date=hour&sort={{ current_sort }}" 
                            class="btn btn-sm btn-outline-secondary btn-filter {% if current_upload_date == 'hour' %}active{% endif %}">
                             1時間以内
                         </a>
-                        <a href="?q={{ search_query }}&category={{ current_category }}&duration={{ current_duration }}&upload_date=today&sort={{ current_sort }}" 
+                        <a href="?q={{ search_query }}&tags={{ tags_query }}&category={{ current_category }}&duration={{ current_duration }}&upload_date=today&sort={{ current_sort }}" 
                            class="btn btn-sm btn-outline-secondary btn-filter {% if current_upload_date == 'today' %}active{% endif %}">
                             今日
                         </a>
-                        <a href="?q={{ search_query }}&category={{ current_category }}&duration={{ current_duration }}&upload_date=week&sort={{ current_sort }}" 
+                        <a href="?q={{ search_query }}&tags={{ tags_query }}&category={{ current_category }}&duration={{ current_duration }}&upload_date=week&sort={{ current_sort }}" 
                            class="btn btn-sm btn-outline-secondary btn-filter {% if current_upload_date == 'week' %}active{% endif %}">
                             今週
                         </a>
-                        <a href="?q={{ search_query }}&category={{ current_category }}&duration={{ current_duration }}&upload_date=month&sort={{ current_sort }}" 
+                        <a href="?q={{ search_query }}&tags={{ tags_query }}&category={{ current_category }}&duration={{ current_duration }}&upload_date=month&sort={{ current_sort }}" 
                            class="btn btn-sm btn-outline-secondary btn-filter {% if current_upload_date == 'month' %}active{% endif %}">
                             今月
                         </a>
-                        <a href="?q={{ search_query }}&category={{ current_category }}&duration={{ current_duration }}&upload_date=year&sort={{ current_sort }}" 
+                        <a href="?q={{ search_query }}&tags={{ tags_query }}&category={{ current_category }}&duration={{ current_duration }}&upload_date=year&sort={{ current_sort }}" 
                            class="btn btn-sm btn-outline-secondary btn-filter {% if current_upload_date == 'year' %}active{% endif %}">
                             今年
                         </a>
@@ -166,23 +233,23 @@
                 <div class="filter-group">
                     <div class="filter-label">並び順</div>
                     <div class="d-flex flex-wrap">
-                        <a href="?q={{ search_query }}&category={{ current_category }}&duration={{ current_duration }}&upload_date={{ current_upload_date }}" 
+                        <a href="?q={{ search_query }}&tags={{ tags_query }}&category={{ current_category }}&duration={{ current_duration }}&upload_date={{ current_upload_date }}" 
                            class="btn btn-sm btn-outline-secondary btn-filter {% if current_sort == 'relevance' %}active{% endif %}">
                             関連度順
                         </a>
-                        <a href="?q={{ search_query }}&category={{ current_category }}&duration={{ current_duration }}&upload_date={{ current_upload_date }}&sort=date" 
+                        <a href="?q={{ search_query }}&tags={{ tags_query }}&category={{ current_category }}&duration={{ current_duration }}&upload_date={{ current_upload_date }}&sort=date" 
                            class="btn btn-sm btn-outline-secondary btn-filter {% if current_sort == 'date' %}active{% endif %}">
                             新着順
                         </a>
-                        <a href="?q={{ search_query }}&category={{ current_category }}&duration={{ current_duration }}&upload_date={{ current_upload_date }}&sort=views" 
+                        <a href="?q={{ search_query }}&tags={{ tags_query }}&category={{ current_category }}&duration={{ current_duration }}&upload_date={{ current_upload_date }}&sort=views" 
                            class="btn btn-sm btn-outline-secondary btn-filter {% if current_sort == 'views' %}active{% endif %}">
                             再生数順
                         </a>
-                        <a href="?q={{ search_query }}&category={{ current_category }}&duration={{ current_duration }}&upload_date={{ current_upload_date }}&sort=rating" 
+                        <a href="?q={{ search_query }}&tags={{ tags_query }}&category={{ current_category }}&duration={{ current_duration }}&upload_date={{ current_upload_date }}&sort=rating" 
                            class="btn btn-sm btn-outline-secondary btn-filter {% if current_sort == 'rating' %}active{% endif %}">
                             評価順
                         </a>
-                        <a href="?q={{ search_query }}&category={{ current_category }}&duration={{ current_duration }}&upload_date={{ current_upload_date }}&sort=duration" 
+                        <a href="?q={{ search_query }}&tags={{ tags_query }}&category={{ current_category }}&duration={{ current_duration }}&upload_date={{ current_upload_date }}&sort=duration" 
                            class="btn btn-sm btn-outline-secondary btn-filter {% if current_sort == 'duration' %}active{% endif %}">
                             長さ順
                         </a>
@@ -207,7 +274,7 @@
                         <ul class="pagination">
                             {% if videos.has_previous %}
                                 <li class="page-item">
-                                    <a class="page-link" href="?q={{ search_query }}&category={{ current_category }}&duration={{ current_duration }}&upload_date={{ current_upload_date }}&sort={{ current_sort }}&page={{ videos.previous_page_number }}">&laquo; 前へ</a>
+                                    <a class="page-link" href="?q={{ search_query }}&tags={{ tags_query }}&category={{ current_category }}&duration={{ current_duration }}&upload_date={{ current_upload_date }}&sort={{ current_sort }}&page={{ videos.previous_page_number }}">&laquo; 前へ</a>
                                 </li>
                             {% endif %}
                             
@@ -218,14 +285,14 @@
                                     </li>
                                 {% elif num > videos.number|add:'-3' and num < videos.number|add:'3' %}
                                     <li class="page-item">
-                                        <a class="page-link" href="?q={{ search_query }}&category={{ current_category }}&duration={{ current_duration }}&upload_date={{ current_upload_date }}&sort={{ current_sort }}&page={{ num }}">{{ num }}</a>
+                                        <a class="page-link" href="?q={{ search_query }}&tags={{ tags_query }}&category={{ current_category }}&duration={{ current_duration }}&upload_date={{ current_upload_date }}&sort={{ current_sort }}&page={{ num }}">{{ num }}</a>
                                     </li>
                                 {% endif %}
                             {% endfor %}
                             
                             {% if videos.has_next %}
                                 <li class="page-item">
-                                    <a class="page-link" href="?q={{ search_query }}&category={{ current_category }}&duration={{ current_duration }}&upload_date={{ current_upload_date }}&sort={{ current_sort }}&page={{ videos.next_page_number }}">次へ &raquo;</a>
+                                    <a class="page-link" href="?q={{ search_query }}&tags={{ tags_query }}&category={{ current_category }}&duration={{ current_duration }}&upload_date={{ current_upload_date }}&sort={{ current_sort }}&page={{ videos.next_page_number }}">次へ &raquo;</a>
                                 </li>
                             {% endif %}
                         </ul>

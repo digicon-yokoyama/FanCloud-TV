@@ -219,13 +219,19 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
     </div>
 
-    <!-- Filters -->
+    <!-- Search and Filters -->
     <div class="card mb-4">
         <div class="card-body">
             <form method="get" class="row g-3">
-                <div class="col-md-6">
+                <div class="col-md-4">
+                    <label class="form-label">検索</label>
+                    <input type="text" name="search" class="form-control" 
+                           placeholder="タイトル、説明で検索..." 
+                           value="{{ search_query|default:'' }}">
+                </div>
+                <div class="col-md-2">
                     <label class="form-label">ステータス</label>
-                    <select name="status" class="form-select" onchange="this.form.submit()">
+                    <select name="status" class="form-select">
                         <option value="">すべて</option>
                         <option value="uploading" {% if status_filter == 'uploading' %}selected{% endif %}>アップロード中</option>
                         <option value="processing" {% if status_filter == 'processing' %}selected{% endif %}>処理中</option>
@@ -234,14 +240,32 @@ document.addEventListener('DOMContentLoaded', function() {
                         <option value="archived" {% if status_filter == 'archived' %}selected{% endif %}>アーカイブ済み</option>
                     </select>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-2">
                     <label class="form-label">カテゴリ</label>
-                    <select name="category" class="form-select" onchange="this.form.submit()">
+                    <select name="category" class="form-select">
                         <option value="">すべて</option>
                         {% for category in categories %}
-                            <option value="{{ category.id }}">{{ category.name }}</option>
+                            <option value="{{ category.id }}" {% if category_filter == category.id|stringformat:'s' %}selected{% endif %}>{{ category.name }}</option>
                         {% endfor %}
                     </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">並び順</label>
+                    <select name="sort" class="form-select">
+                        <option value="-created_at" {% if sort_by == '-created_at' %}selected{% endif %}>新しい順</option>
+                        <option value="created_at" {% if sort_by == 'created_at' %}selected{% endif %}>古い順</option>
+                        <option value="-view_count" {% if sort_by == '-view_count' %}selected{% endif %}>人気順</option>
+                        <option value="title" {% if sort_by == 'title' %}selected{% endif %}>タイトル順</option>
+                        <option value="-duration" {% if sort_by == '-duration' %}selected{% endif %}>長い順</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-outline-secondary">
+                            <i class="bi bi-search me-1"></i>検索
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -347,9 +371,9 @@ document.addEventListener('DOMContentLoaded', function() {
                                         </a>
                                     {% endif %}
                                     
-                                    <button class="btn btn-sm btn-outline-secondary" title="編集">
+                                    <a href="{% url 'content:edit_video' video.id %}" class="btn btn-sm btn-outline-secondary" title="編集">
                                         <i class="bi bi-pencil"></i>
-                                    </button>
+                                    </a>
                                     
                                     <a href="{% url 'content:delete_video' video.id %}" 
                                        class="btn btn-sm btn-outline-danger delete-video"
@@ -371,10 +395,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 <ul class="pagination justify-content-center">
                     {% if videos.has_previous %}
                         <li class="page-item">
-                            <a class="page-link" href="?page=1{% if status_filter %}&status={{ status_filter }}{% endif %}">最初</a>
+                            <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}">最初</a>
                         </li>
                         <li class="page-item">
-                            <a class="page-link" href="?page={{ videos.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}">前へ</a>
+                            <a class="page-link" href="?page={{ videos.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}">前へ</a>
                         </li>
                     {% endif %}
 
@@ -385,17 +409,17 @@ document.addEventListener('DOMContentLoaded', function() {
                             </li>
                         {% elif num > videos.number|add:'-3' and num < videos.number|add:'3' %}
                             <li class="page-item">
-                                <a class="page-link" href="?page={{ num }}{% if status_filter %}&status={{ status_filter }}{% endif %}">{{ num }}</a>
+                                <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}">{{ num }}</a>
                             </li>
                         {% endif %}
                     {% endfor %}
 
                     {% if videos.has_next %}
                         <li class="page-item">
-                            <a class="page-link" href="?page={{ videos.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}">次へ</a>
+                            <a class="page-link" href="?page={{ videos.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}">次へ</a>
                         </li>
                         <li class="page-item">
-                            <a class="page-link" href="?page={{ videos.paginator.num_pages }}{% if status_filter %}&status={{ status_filter }}{% endif %}">最後</a>
+                            <a class="page-link" href="?page={{ videos.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}">最後</a>
                         </li>
                     {% endif %}
                 </ul>

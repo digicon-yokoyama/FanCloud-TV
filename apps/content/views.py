@@ -2,7 +2,8 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db import models
+from django.db.models import Q, Count
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods, require_POST
@@ -11,7 +12,8 @@ from django.utils import timezone
 from django.core.files.storage import default_storage
 import uuid
 import os
-from .models import Video, VideoCategory, Comment, VideoLike
+from .models import Video, VideoCategory, VideoTag, Comment, VideoLike
+from apps.accounts.permissions import tenant_admin_required
 
 
 def trending(request):
@@ -141,6 +143,7 @@ def upload_video(request):
         description = request.POST.get('description', '').strip()
         privacy = request.POST.get('privacy', 'public')
         category_id = request.POST.get('category')
+        tags_input = request.POST.get('tags', '').strip()
         
         if not title:
             messages.error(request, 'タイトルを入力してください')
@@ -188,6 +191,13 @@ def upload_video(request):
             # Save the video with thumbnail and category
             video.save()
             
+            # Process and save tags
+            if tags_input:
+                tag_names = [tag.strip() for tag in tags_input.split(',') if tag.strip()]
+                for tag_name in tag_names:
+                    tag, created = VideoTag.objects.get_or_create(name=tag_name)
+                    video.tags.add(tag)
+            
             # Send notifications to followers
             from apps.notifications.services import NotificationService
             NotificationService.notify_new_video(video)
@@ -230,12 +240,37 @@ def generate_unique_slug(title):
 @login_required
 def manage_videos(request):
     """Manage user's uploaded videos."""
-    videos = Video.objects.filter(uploader=request.user).order_by('-created_at')
+    videos = Video.objects.filter(uploader=request.user)
+    
+    # Search filter
+    search_query = request.GET.get('search')
+    if search_query:
+        videos = videos.filter(
+            Q(title__icontains=search_query) | 
+            Q(description__icontains=search_query)
+        )
     
     # Filter by status
     status_filter = request.GET.get('status')
     if status_filter and status_filter != 'all':
         videos = videos.filter(status=status_filter)
+    
+    # Filter by category
+    category_filter = request.GET.get('category')
+    if category_filter and category_filter != 'all':
+        try:
+            category = VideoCategory.objects.get(id=category_filter, is_active=True)
+            videos = videos.filter(category=category)
+        except VideoCategory.DoesNotExist:
+            pass
+    
+    # Sort order
+    sort_by = request.GET.get('sort', '-created_at')
+    valid_sorts = ['-created_at', 'created_at', '-view_count', 'title', '-duration']
+    if sort_by in valid_sorts:
+        videos = videos.order_by(sort_by)
+    else:
+        videos = videos.order_by('-created_at')
     
     paginator = Paginator(videos, 12)
     page_number = request.GET.get('page')
@@ -252,10 +287,62 @@ def manage_videos(request):
     context = {
         'videos': page_obj,
         'stats': stats,
+        'search_query': search_query,
         'status_filter': status_filter,
+        'category_filter': category_filter,
+        'sort_by': sort_by,
         'categories': VideoCategory.objects.filter(is_active=True),
     }
     return render(request, 'content/manage.html', context)
+
+
+@login_required
+def edit_video(request, video_id):
+    """Edit video information."""
+    video = get_object_or_404(Video, id=video_id, uploader=request.user)
+    categories = VideoCategory.objects.filter(is_active=True)
+    
+    if request.method == 'POST':
+        # Update video information
+        video.title = request.POST.get('title', '').strip()
+        video.description = request.POST.get('description', '').strip()
+        video.privacy = request.POST.get('privacy', 'public')
+        tags_input = request.POST.get('tags', '').strip()
+        
+        category_id = request.POST.get('category')
+        if category_id:
+            try:
+                video.category = VideoCategory.objects.get(id=category_id, is_active=True)
+            except VideoCategory.DoesNotExist:
+                pass
+        else:
+            video.category = None
+        
+        # Validate title
+        if not video.title:
+            messages.error(request, 'タイトルは必須です。')
+            return render(request, 'content/edit.html', {
+                'video': video,
+                'categories': categories
+            })
+        
+        video.save()
+        
+        # Process and update tags
+        video.tags.clear()  # Clear existing tags
+        if tags_input:
+            tag_names = [tag.strip() for tag in tags_input.split(',') if tag.strip()]
+            for tag_name in tag_names:
+                tag, created = VideoTag.objects.get_or_create(name=tag_name)
+                video.tags.add(tag)
+        
+        messages.success(request, f'動画「{video.title}」の情報を更新しました。')
+        return redirect('content:manage_videos')
+    
+    return render(request, 'content/edit.html', {
+        'video': video,
+        'categories': categories
+    })
 
 
 @login_required
@@ -431,26 +518,34 @@ def delete_comment(request, comment_id):
 
 
 def search_videos(request):
-    """Search videos with filters."""
+    """Search videos with advanced filters and tags."""
     query = request.GET.get('q', '').strip()
     category_id = request.GET.get('category')
     sort_by = request.GET.get('sort', 'relevance')
     duration_filter = request.GET.get('duration', 'any')
     upload_date = request.GET.get('upload_date', 'any')
+    tags_query = request.GET.get('tags', '').strip()
     
     # Base queryset
     videos = Video.objects.filter(
         status='ready',
         privacy__in=['public', 'unlisted']
-    )
+    ).select_related('uploader', 'category').prefetch_related('tags')
     
-    # Search by title and description
+    # Search by title, description, and uploader
     if query:
         videos = videos.filter(
             Q(title__icontains=query) | 
             Q(description__icontains=query) |
             Q(uploader__username__icontains=query)
         )
+    
+    # Search by tags
+    if tags_query:
+        tag_names = [tag.strip() for tag in tags_query.split(',') if tag.strip()]
+        if tag_names:
+            # Search for videos that have any of the specified tags
+            videos = videos.filter(tags__name__in=tag_names).distinct()
     
     # Filter by category
     if category_id and category_id != 'all':
@@ -499,31 +594,43 @@ def search_videos(request):
     elif sort_by == 'duration':
         videos = videos.order_by('-duration')
     else:  # relevance (default)
-        if query:
-            # Simple relevance: title matches first, then description
+        if query or tags_query:
+            # Enhanced relevance scoring
             videos = videos.extra(
                 select={
-                    'title_match': "CASE WHEN title ILIKE %s THEN 1 ELSE 0 END",
-                    'username_match': "CASE WHEN uploader.username ILIKE %s THEN 1 ELSE 0 END",
+                    'title_match': "CASE WHEN title ILIKE %s THEN 2 ELSE 0 END",
+                    'desc_match': "CASE WHEN description ILIKE %s THEN 1 ELSE 0 END",
+                    'tag_match': "CASE WHEN EXISTS(SELECT 1 FROM content_videotag vt JOIN content_video_tags vvt ON vt.id = vvt.videotag_id WHERE vvt.video_id = content_video.id AND vt.name ILIKE %s) THEN 3 ELSE 0 END"
                 },
-                select_params=[f'%{query}%', f'%{query}%'],
-                order_by=['-title_match', '-username_match', '-view_count']
+                select_params=[
+                    f'%{query}%' if query else '', 
+                    f'%{query}%' if query else '',
+                    f'%{tags_query}%' if tags_query else ''
+                ],
+                order_by=['-tag_match', '-title_match', '-desc_match', '-view_count']
             )
         else:
             videos = videos.order_by('-view_count')
     
     # Pagination
-    paginator = Paginator(videos, 12)
+    paginator = Paginator(videos, 20)  # Increased page size for better search results
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
     # Get categories for filter
     categories = VideoCategory.objects.filter(is_active=True)
     
+    # Get popular tags for suggestions
+    popular_tags = VideoTag.objects.annotate(
+        video_count=Count('videos')
+    ).filter(video_count__gt=0).order_by('-video_count')[:20]
+    
     context = {
         'videos': page_obj,
         'categories': categories,
+        'popular_tags': popular_tags,
         'search_query': query,
+        'tags_query': tags_query,
         'current_category': category_id,
         'current_sort': sort_by,
         'current_duration': duration_filter,
@@ -578,3 +685,124 @@ def playlists(request):
         'empty_message': 'プレイリストはありません'
     }
     return render(request, 'content/playlists.html', context)
+
+
+# Category Management Views (Admin only)
+
+@tenant_admin_required
+def manage_categories(request):
+    """Manage video categories (Admin only)."""
+    categories = VideoCategory.objects.all().order_by('name')
+    
+    # Statistics
+    stats = {
+        'total_categories': categories.count(),
+        'active_categories': categories.filter(is_active=True).count(),
+        'inactive_categories': categories.filter(is_active=False).count(),
+    }
+    
+    context = {
+        'categories': categories,
+        'stats': stats,
+    }
+    return render(request, 'content/admin/categories.html', context)
+
+
+@tenant_admin_required
+def create_category(request):
+    """Create new video category (Admin only)."""
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        description = request.POST.get('description', '').strip()
+        color = request.POST.get('color', '#6c757d')
+        is_active = request.POST.get('is_active') == 'on'
+        
+        # Validate name
+        if not name:
+            messages.error(request, 'カテゴリ名は必須です。')
+            return render(request, 'content/admin/category_form.html', {
+                'form_data': request.POST,
+            })
+        
+        # Check if category name already exists
+        if VideoCategory.objects.filter(name=name).exists():
+            messages.error(request, 'このカテゴリ名は既に存在します。')
+            return render(request, 'content/admin/category_form.html', {
+                'form_data': request.POST,
+            })
+        
+        # Create category
+        VideoCategory.objects.create(
+            name=name,
+            description=description,
+            color=color,
+            is_active=is_active
+        )
+        
+        messages.success(request, f'カテゴリ「{name}」を作成しました。')
+        return redirect('content:admin_categories')
+    
+    return render(request, 'content/admin/category_form.html', {
+        'action': '作成',
+    })
+
+
+@tenant_admin_required
+def edit_category(request, category_id):
+    """Edit video category (Admin only)."""
+    category = get_object_or_404(VideoCategory, id=category_id)
+    
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        description = request.POST.get('description', '').strip()
+        color = request.POST.get('color', '#6c757d')
+        is_active = request.POST.get('is_active') == 'on'
+        
+        # Validate name
+        if not name:
+            messages.error(request, 'カテゴリ名は必須です。')
+            return render(request, 'content/admin/category_form.html', {
+                'category': category,
+                'form_data': request.POST,
+            })
+        
+        # Check if category name already exists (excluding current category)
+        if VideoCategory.objects.filter(name=name).exclude(id=category_id).exists():
+            messages.error(request, 'このカテゴリ名は既に存在します。')
+            return render(request, 'content/admin/category_form.html', {
+                'category': category,
+                'form_data': request.POST,
+            })
+        
+        # Update category
+        category.name = name
+        category.description = description
+        category.color = color
+        category.is_active = is_active
+        category.save()
+        
+        messages.success(request, f'カテゴリ「{name}」を更新しました。')
+        return redirect('content:admin_categories')
+    
+    return render(request, 'content/admin/category_form.html', {
+        'category': category,
+        'action': '編集',
+    })
+
+
+@tenant_admin_required
+@require_http_methods(["POST"])
+def delete_category(request, category_id):
+    """Delete video category (Admin only)."""
+    category = get_object_or_404(VideoCategory, id=category_id)
+    
+    # Check if category is being used by any videos
+    videos_count = Video.objects.filter(category=category).count()
+    if videos_count > 0:
+        messages.error(request, f'このカテゴリは{videos_count}個の動画で使用されているため削除できません。')
+        return redirect('content:admin_categories')
+    
+    category_name = category.name
+    category.delete()
+    messages.success(request, f'カテゴリ「{category_name}」を削除しました。')
+    return redirect('content:admin_categories')

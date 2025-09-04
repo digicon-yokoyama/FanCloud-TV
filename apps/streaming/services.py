@@ -154,20 +154,6 @@ class AWSIVSProvider:
         raise NotImplementedError("AWS IVS provider not yet implemented")
 
 
-class AzureMediaServicesProvider:
-    """
-    Azure Media Services provider.
-    TODO: Implement when ready for production.
-    """
-    
-    def __init__(self):
-        pass
-    
-    def create_stream(self, stream_data):
-        """Create stream using Azure Media Services."""
-        # TODO: Implement Azure Media Services integration
-        raise NotImplementedError("Azure Media Services provider not yet implemented")
-
 
 def get_stream_quality_options():
     """Get available stream quality options."""

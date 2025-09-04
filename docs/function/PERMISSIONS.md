@@ -25,6 +25,7 @@ FanCloud TV(仮)では、4階層のユーザーロールベースアクセス制
 - **機能**:
   - テナント内ユーザーの管理
   - コンテンツの管理・モデレーション
+  - **動画カテゴリの管理（追加/編集/削除）**
   - 配信権限の付与/取り消し
   - ユーザーロール変更（System Admin除く）
   - 配信機能の利用
@@ -146,6 +147,7 @@ class AdminView(PermissionMixin, View):
 ### 管理機能（管理者権限必須）
 - **ユーザー管理**: http://localhost:8000/accounts/admin/users/
 - **システム管理**: http://localhost:8000/accounts/admin/system/
+- **カテゴリ管理**: http://localhost:8000/content/admin/categories/ （テナント管理者権限必須）
 - **Django Admin**: http://localhost:8000/admin/
 
 ### API エンドポイント（管理者権限必須）
@@ -181,7 +183,16 @@ class AdminView(PermissionMixin, View):
 4. 配信権限の付与/取り消しを実行
 5. 変更がリアルタイムで反映されることを確認
 
-### 3. 各ロールでの機能確認
+### 3. カテゴリ管理のテスト
+
+1. `tenantadmin` でログインしてカテゴリ管理画面にアクセス
+2. カテゴリの一覧表示を確認
+3. 新規カテゴリ作成機能をテスト
+4. カテゴリ情報の編集機能をテスト
+5. 使用中でないカテゴリの削除機能をテスト
+6. `tenant_user` や `subscriber` がアクセスできないことを確認
+
+### 4. 各ロールでの機能確認
 
 各テストユーザーでログインし、以下を確認：
 
@@ -191,7 +202,7 @@ class AdminView(PermissionMixin, View):
 - **Subscriber**: 管理機能へのアクセス不可
 - **Premium Member**: プレミアム限定機能へのアクセス
 
-### 4. 権限エラーのテスト
+### 5. 権限エラーのテスト
 
 1. 権限のないユーザーで管理画面URLに直接アクセス
 2. 「権限がありません」エラーが表示されることを確認

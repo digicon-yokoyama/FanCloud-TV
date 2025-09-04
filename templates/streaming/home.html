@@ -6,18 +6,19 @@
 {% block content %}
     <!-- Live Streams Section -->
     {% if live_streams %}
-        <div class="mb-5">
+        <div class="mb-5" data-section="live-streams">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h4 class="mb-0">
                     <i class="bi bi-broadcast-pin text-danger me-2"></i>
                     ライブ配信中
+                    <span class="badge bg-danger rounded-pill">{{ live_streams|length }}</span>
                 </h4>
-                <a href="{% url 'streaming:live' %}" class="btn btn-outline-primary btn-sm">
+                <a href="{% url 'streaming:live' %}" class="btn btn-outline-secondary btn-sm">
                     すべて見る <i class="bi bi-arrow-right"></i>
                 </a>
             </div>
             
-            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-4">
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-4">
                 {% for stream in live_streams %}
                     {% include 'partials/video_card.html' with video=stream %}
                 {% endfor %}
@@ -32,13 +33,14 @@
                 <h4 class="mb-0">
                     <i class="bi bi-fire text-warning me-2"></i>
                     トレンド
+                    <span class="badge bg-warning text-dark rounded-pill">{{ trending_videos|length }}</span>
                 </h4>
-                <button class="btn btn-outline-secondary btn-sm" disabled title="近日公開予定">
-                    すべて見る (準備中) <i class="bi bi-hourglass"></i>
-                </button>
+                <a href="{% url 'content:trending' %}" class="btn btn-outline-secondary btn-sm">
+                    すべて見る <i class="bi bi-arrow-right"></i>
+                </a>
             </div>
             
-            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-4">
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-4">
                 {% for video in trending_videos %}
                     {% include 'partials/video_card.html' with video=video %}
                 {% endfor %}
@@ -53,10 +55,11 @@
                 <h4 class="mb-0">
                     <i class="bi bi-clock-history me-2"></i>
                     最新の動画
+                    <span class="badge bg-secondary rounded-pill">{{ recent_videos|length }}</span>
                 </h4>
             </div>
             
-            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-4">
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-4">
                 {% for video in recent_videos %}
                     {% include 'partials/video_card.html' with video=video %}
                 {% endfor %}
@@ -71,14 +74,34 @@
                 <h4 class="mb-0">
                     <i class="bi bi-collection-play me-2"></i>
                     登録チャンネル
+                    <span class="badge bg-primary rounded-pill">{{ subscription_videos|length }}</span>
                 </h4>
-                <button class="btn btn-outline-secondary btn-sm" disabled title="近日公開予定">
-                    すべて見る (準備中) <i class="bi bi-hourglass"></i>
-                </button>
+                <a href="{% url 'content:subscriptions' %}" class="btn btn-outline-secondary btn-sm">
+                    すべて見る <i class="bi bi-arrow-right"></i>
+                </a>
             </div>
             
-            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-4">
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-4">
                 {% for video in subscription_videos %}
+                    {% include 'partials/video_card.html' with video=video %}
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Recommended Videos Section -->
+    {% if recommended_videos %}
+        <div class="mb-5">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="mb-0">
+                    <i class="bi bi-lightbulb me-2"></i>
+                    おすすめ
+                    <span class="badge bg-info rounded-pill">{{ recommended_videos|length }}</span>
+                </h4>
+            </div>
+            
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-4">
+                {% for video in recommended_videos %}
                     {% include 'partials/video_card.html' with video=video %}
                 {% endfor %}
             </div>
@@ -116,9 +139,9 @@ function updateLiveStreams() {
         const parser = new DOMParser();
         const newDoc = parser.parseFromString(html, 'text/html');
         
-        // ライブ配信セクションを更新
-        const currentLiveSection = document.querySelector('.mb-5:first-child');
-        const newLiveSection = newDoc.querySelector('.mb-5:first-child');
+        // ライブ配信セクション全体を更新
+        const currentLiveSection = document.querySelector('[data-section="live-streams"]');
+        const newLiveSection = newDoc.querySelector('[data-section="live-streams"]');
         
         if (currentLiveSection && newLiveSection) {
             // ライブ配信セクションが変更された場合のみ更新
@@ -131,7 +154,7 @@ function updateLiveStreams() {
     .catch(error => console.error('Failed to update live streams:', error));
 }
 
-// 30秒ごとに更新
+// 30秒ごとにライブ配信を更新
 setInterval(updateLiveStreams, 30000);
 </script>
 {% endblock %}

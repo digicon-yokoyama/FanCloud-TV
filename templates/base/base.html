@@ -275,9 +275,9 @@
             <!-- Search -->
             <form class="d-flex mx-auto" style="max-width: 600px; width: 100%;" action="{% url 'content:search' %}" method="get">
                 <div class="input-group">
-                    <input class="form-control" type="search" name="q" placeholder="動画を検索..." aria-label="Search" value="{{ request.GET.q }}">
-                    <button class="btn btn-outline-secondary" type="submit">
-                        <i class="bi bi-search"></i>
+                    <input class="form-control" type="search" name="q" placeholder="動画、タグ、配信者を検索..." aria-label="Search" value="{{ request.GET.q }}">
+                    <button class="btn btn-outline-secondary" type="submit" title="詳細検索">
+                        <i class="bi bi-search"></i> 検索
                     </button>
                 </div>
             </form>
