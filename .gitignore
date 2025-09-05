@@ -16,28 +16,48 @@ parts/
 sdist/
 var/
 wheels/
+share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
 MANIFEST
+*.manifest
+*.spec
+pip-log.txt
+pip-delete-this-directory.txt
 
 # Django
 *.log
+*.pot
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
-.env
-.env.local
-.env.development
-.env.test
-.env.production
-
-# Media files
 media/
-
-# Static files (except for development)
 staticfiles/
-static/
+static_root/
+collected_static/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+virtualenv/
+.Python
+[Bb]in
+[Ii]nclude
+[Ll]ib
+[Ll]ib64
+[Ll]ocal
+[Ss]cripts
+pyvenv.cfg
+.virtualenv
+pip-selfcheck.json
 
 # IDE
 .vscode/
@@ -45,43 +65,231 @@ static/
 *.swp
 *.swo
 *~
+*.sublime-project
+*.sublime-workspace
+.project
+.pydevproject
+.settings/
+.classpath
 
-# OS
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Docker
-.dockerignore
-docker-compose.override.yml
-
-# Coverage reports
+# Testing
+.coverage
+.pytest_cache/
 htmlcov/
 .tox/
-.coverage
+.nox/
 .coverage.*
-.cache
+*.cover
+*.py,cover
+.hypothesis/
 nosetests.xml
 coverage.xml
-*.cover
-.hypothesis/
-.pytest_cache/
+*.coveragerc
+.cache
+test-results/
+pytest_cache/
+
+# Docker
+docker-compose.override.yml
+.dockerignore
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+celerybeat-schedule.db
+*.pid
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+*.sql
+*.dump
+*.pgdump
+postgres-data/
+mysql-data/
+
+# Backup files
+*.bak
+*.backup
+*.tmp
+*.temp
+*~
+
+# Node.js (if using frontend build tools)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+.pnpm-debug.log*
 
 # Jupyter Notebook
 .ipynb_checkpoints
+*.ipynb
 
 # pyenv
 .python-version
 
-# celery beat schedule file
-celerybeat-schedule
+# Migrations (uncomment if you want to ignore - not recommended)
+# */migrations/*.py
+# !*/migrations/__init__.py
 
-# SageMath parsed files
-*.sage.py
+# Secret keys and certificates
+*.pem
+*.key
+*.crt
+*.cer
+*.p12
+*.pfx
+secrets/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Upload files (but keep directory structure)
+uploads/*
+!uploads/.gitkeep
+
+# Log files
+logs/
+*.log
+*.log.*
+*.logs
+
+# Redis
+dump.rdb
+redis-data/
+
+# Elasticsearch
+elasticsearch-data/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+[Dd]esktop.ini
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# VS Code specific
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+.history/
+
+# PyCharm specific
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Spyder
+.spyderproject
+.spyproject
+
+# Rope
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# Static files collection
+/staticfiles/
+/static_collected/
+/assets/
+
+# Local PostgreSQL data
+pgdata/
+
+# Webpack
+webpack-stats.json
+/bundles/
+
+# Sass
+.sass-cache/
+*.css.map
+*.sass.map
+*.scss.map
+
+# Translations
+*.mo
+
+# Django stuff
+instance/
+.webassets-cache
+
+# Flask stuff
+instance/
+.webassets-cache
+
+# Scrapy stuff
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+docs/.build/
+
+# PyBuilder
+target/
+
+# IPython
+profile_default/
+ipython_config.py
 
 # Environments
 .env
@@ -91,3 +299,4 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+pythonenv*
