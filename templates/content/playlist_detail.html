@@ -1,0 +1,340 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}{{ playlist.title }} - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-start mb-4">
+                <div class="flex-grow-1">
+                    <div class="d-flex align-items-center mb-2">
+                        <h2 class="mb-0 me-3">{{ playlist.title }}</h2>
+                        {% if playlist.privacy == 'private' %}
+                        <span class="badge bg-secondary">非公開</span>
+                        {% elif playlist.privacy == 'unlisted' %}
+                        <span class="badge bg-secondary">限定公開</span>
+                        {% else %}
+                        <span class="badge bg-success">公開</span>
+                        {% endif %}
+                    </div>
+                    <div class="row text-muted mb-2">
+                        <div class="col-md-6">
+                            <small>
+                                <i class="bi bi-person me-1"></i>作成者: {{ playlist.owner.username }} • 
+                                <i class="bi bi-collection-play me-1"></i>{{ playlist.video_count }}本の動画
+                            </small>
+                        </div>
+                        <div class="col-md-6">
+                            <small>
+                                <i class="bi bi-calendar me-1"></i>作成: {{ playlist.created_at|date:"Y年m月d日" }} • 
+                                <i class="bi bi-clock-history me-1"></i>更新: {{ playlist.updated_at|timesince }}前
+                            </small>
+                        </div>
+                    </div>
+                    {% if playlist.description %}
+                    <p class="mb-3">{{ playlist.description|linebreaks }}</p>
+                    {% endif %}
+                </div>
+                <div class="d-flex gap-2 flex-wrap">
+                    {% if items %}
+                    <a href="{% url 'content:watch' items.0.video.id %}?playlist={{ playlist.pk }}" class="btn btn-success btn-sm">
+                        <i class="bi bi-play-circle me-1"></i>再生開始
+                    </a>
+                    {% endif %}
+                    {% if is_owner %}
+                    <button type="button" class="btn btn-primary btn-sm" onclick="toggleAddSection()">
+                        <i class="bi bi-plus-circle me-1"></i>動画を追加
+                    </button>
+                    <a href="{% url 'content:edit_playlist' playlist.pk %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-pencil me-1"></i>編集
+                    </a>
+                    <form method="post" action="{% url 'content:delete_playlist' playlist.pk %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('このプレイリストを削除してもよろしいですか？')">
+                            <i class="bi bi-trash me-1"></i>削除
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Add Videos Section (Hidden by default) -->
+            {% if is_owner and available_videos %}
+            <div id="addVideoSection" class="card mb-4" style="display: none;">
+                <div class="card-header bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">動画を追加</h5>
+                        <button type="button" class="btn-close" onclick="toggleAddSection()"></button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-center mb-3">
+                        <div class="col-md-6">
+                            <input type="text" class="form-control" id="videoSearch" placeholder="動画を検索..." onkeyup="filterVideos()">
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex gap-2 justify-content-md-end mt-2 mt-md-0">
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectAll()" title="表示されている動画を全て選択">
+                                    <i class="bi bi-check-all"></i> 全選択
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearSelection()" title="選択を全て解除">
+                                    <i class="bi bi-x-circle"></i> 解除
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="addSelectedVideos()" id="addSelectedBtn" disabled>
+                                    <i class="bi bi-plus-lg"></i> 
+                                    <span class="d-none d-lg-inline">選択した動画を追加</span>
+                                    (<span id="selectedCount">0</span>)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row g-2" id="videoGrid" style="max-height: 500px; overflow-y: auto;">
+                        {% for video in available_videos %}
+                        <div class="col-sm-6 col-md-4 col-lg-3 col-xl-2 video-item">
+                            <div class="card h-100 video-card" onclick="toggleVideoSelection(this, {{ video.id }})">
+                                <div class="position-relative">
+                                    <img src="{{ video.thumbnail_url|default:'/static/img/thumbnail_placeholder.jpg' }}" 
+                                         class="card-img-top" 
+                                         alt="{{ video.title }}"
+                                         style="height: 100px; object-fit: cover;">
+                                    <div class="position-absolute top-0 end-0 m-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input video-checkbox" type="checkbox" value="{{ video.id }}" onclick="event.stopPropagation()">
+                                        </div>
+                                    </div>
+                                    <div class="video-overlay position-absolute top-0 start-0 w-100 h-100 d-none" 
+                                         style="background: rgba(0,123,255,0.2); border: 2px solid #007bff;"></div>
+                                </div>
+                                <div class="card-body p-2">
+                                    <h6 class="card-title video-title" style="font-size: 0.75rem; line-height: 1.2; height: 2.4rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
+                                        {{ video.title }}
+                                    </h6>
+                                    <p class="card-text text-muted mb-0" style="font-size: 0.7rem;">
+                                        {{ video.uploader.username }}<br>{{ video.view_count }}回
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if items %}
+            <div class="list-group">
+                {% for item in items %}
+                <div class="list-group-item">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <span class="text-muted">{{ forloop.counter }}</span>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{% url 'content:watch' item.video.id %}?playlist={{ playlist.pk }}">
+                                <div class="ratio ratio-16x9">
+                                    <img src="{{ item.video.thumbnail_url|default:'/static/img/thumbnail_placeholder.jpg' }}" 
+                                         class="rounded" 
+                                         alt="{{ item.video.title }}"
+                                         style="object-fit: cover;">
+                                    <div class="position-absolute top-0 start-0 m-2">
+                                        <span class="badge bg-dark bg-opacity-75">{{ forloop.counter }}</span>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-6">
+                            <h5 class="mb-1">
+                                <a href="{% url 'content:watch' item.video.id %}?playlist={{ playlist.pk }}" class="text-decoration-none text-dark">
+                                    {{ item.video.title }}
+                                </a>
+                            </h5>
+                            <p class="mb-1 text-muted">{{ item.video.uploader.username }}</p>
+                            <small class="text-muted">
+                                {{ item.video.views_count }}回視聴 • {{ item.video.created_at|timesince }}前
+                            </small>
+                        </div>
+                        {% if is_owner %}
+                        <div class="col-auto">
+                            <form method="post" action="{% url 'content:remove_from_playlist' playlist.pk item.pk %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-secondary" 
+                                        title="プレイリストから削除"
+                                        onclick="return confirm('この動画をプレイリストから削除しますか？')"
+                                        onmouseover="this.classList.replace('btn-outline-secondary', 'btn-outline-danger')"
+                                        onmouseout="this.classList.replace('btn-outline-danger', 'btn-outline-secondary')">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </form>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-collection-play" style="font-size: 3rem; color: #ccc;"></i>
+                <p class="mt-3 text-muted">このプレイリストにはまだ動画がありません</p>
+                {% if is_owner %}
+                <p class="text-muted">動画視聴ページから動画を追加できます</p>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- CSRF Token for AJAX -->
+{% csrf_token %}
+
+<script>
+let selectedVideos = new Set();
+
+function toggleAddSection() {
+    const section = document.getElementById('addVideoSection');
+    if (section.style.display === 'none' || section.style.display === '') {
+        section.style.display = 'block';
+        // スクロールして見えるようにする
+        section.scrollIntoView({ behavior: 'smooth' });
+    } else {
+        section.style.display = 'none';
+        // セクションを閉じるときに選択をクリア
+        clearSelection();
+    }
+}
+
+function filterVideos() {
+    const searchInput = document.getElementById('videoSearch');
+    if (!searchInput) return;
+    
+    const searchValue = searchInput.value.toLowerCase();
+    const videoItems = document.querySelectorAll('.video-item');
+    
+    videoItems.forEach(item => {
+        const title = item.querySelector('.video-title').textContent.toLowerCase();
+        const parentCol = item; // col-md-6 col-lg-4 is the video-item itself
+        
+        if (title.includes(searchValue)) {
+            parentCol.style.display = '';
+        } else {
+            parentCol.style.display = 'none';
+        }
+    });
+}
+
+function toggleVideoSelection(cardElement, videoId) {
+    const checkbox = cardElement.querySelector('.video-checkbox');
+    const overlay = cardElement.querySelector('.video-overlay');
+    
+    // チェックボックスの状態を切り替え
+    checkbox.checked = !checkbox.checked;
+    
+    if (checkbox.checked) {
+        selectedVideos.add(videoId);
+        overlay.classList.remove('d-none');
+        cardElement.style.transform = 'scale(0.98)';
+    } else {
+        selectedVideos.delete(videoId);
+        overlay.classList.add('d-none');
+        cardElement.style.transform = 'scale(1)';
+    }
+    
+    updateSelectedCount();
+}
+
+function selectAll() {
+    const visibleItems = document.querySelectorAll('.video-item:not([style*="display: none"]) .video-card');
+    visibleItems.forEach(card => {
+        const checkbox = card.querySelector('.video-checkbox');
+        const overlay = card.querySelector('.video-overlay');
+        const videoId = parseInt(checkbox.value);
+        
+        if (!checkbox.checked) {
+            checkbox.checked = true;
+            selectedVideos.add(videoId);
+            overlay.classList.remove('d-none');
+            card.style.transform = 'scale(0.98)';
+        }
+    });
+    updateSelectedCount();
+}
+
+function clearSelection() {
+    selectedVideos.clear();
+    const checkboxes = document.querySelectorAll('.video-checkbox');
+    const overlays = document.querySelectorAll('.video-overlay');
+    const cards = document.querySelectorAll('.video-card');
+    
+    checkboxes.forEach(checkbox => checkbox.checked = false);
+    overlays.forEach(overlay => overlay.classList.add('d-none'));
+    cards.forEach(card => card.style.transform = 'scale(1)');
+    
+    updateSelectedCount();
+}
+
+function updateSelectedCount() {
+    const count = selectedVideos.size;
+    const countSpan = document.getElementById('selectedCount');
+    const addBtn = document.getElementById('addSelectedBtn');
+    
+    countSpan.textContent = count;
+    addBtn.disabled = count === 0;
+    
+    if (count > 0) {
+        addBtn.classList.remove('btn-outline-primary');
+        addBtn.classList.add('btn-primary');
+        addBtn.style.fontWeight = 'bold';
+    } else {
+        addBtn.classList.remove('btn-primary');
+        addBtn.classList.add('btn-outline-primary');
+        addBtn.style.fontWeight = 'normal';
+    }
+}
+
+function addSelectedVideos() {
+    if (selectedVideos.size === 0) {
+        alert('動画を選択してください');
+        return;
+    }
+    
+    const addBtn = document.getElementById('addSelectedBtn');
+    const originalText = addBtn.innerHTML;
+    addBtn.disabled = true;
+    addBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>追加中...';
+    
+    // 選択された動画IDを配列に変換
+    const videoIds = Array.from(selectedVideos);
+    
+    // POSTリクエストを送信
+    fetch(`/content/playlists/{{ playlist.pk }}/add-multiple/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            video_ids: videoIds
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // 成功時はページをリロード
+            location.reload();
+        } else {
+            alert(data.message || '追加に失敗しました');
+            addBtn.disabled = false;
+            addBtn.innerHTML = originalText;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('追加中にエラーが発生しました');
+        addBtn.disabled = false;
+        addBtn.innerHTML = originalText;
+    });
+}
+</script>
+{% endblock %}

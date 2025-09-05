@@ -12,7 +12,7 @@ from django.utils import timezone
 from django.core.files.storage import default_storage
 import uuid
 import os
-from .models import Video, VideoCategory, VideoTag, Comment, VideoLike
+from .models import Video, VideoCategory, VideoTag, Comment, VideoLike, VideoView, Playlist, PlaylistItem
 from apps.accounts.permissions import tenant_admin_required
 
 
@@ -82,6 +82,35 @@ def watch_video(request, video_id):
     if video.privacy == 'premium' and not request.user.is_premium():
         return render(request, 'content/premium_required.html', {'video': video})
     
+    # プレイリスト情報を取得（URLパラメータから）
+    playlist_id = request.GET.get('playlist')
+    current_playlist = None
+    playlist_videos = []
+    current_index = 0
+    
+    if playlist_id:
+        try:
+            current_playlist = Playlist.objects.get(pk=playlist_id)
+            # プレイリストの閲覧権限チェック
+            if (current_playlist.privacy == 'private' and 
+                current_playlist.owner != request.user):
+                current_playlist = None
+            else:
+                playlist_items = PlaylistItem.objects.filter(
+                    playlist=current_playlist
+                ).select_related('video').order_by('order')
+                
+                playlist_videos = [item.video for item in playlist_items if item.video.status == 'ready']
+                
+                # 現在の動画のインデックスを取得
+                try:
+                    current_index = next(i for i, v in enumerate(playlist_videos) if v.id == video.id)
+                except StopIteration:
+                    current_playlist = None  # 動画がプレイリストにない場合
+                    
+        except Playlist.DoesNotExist:
+            current_playlist = None
+    
     # Check if current user is following the uploader
     is_following = False
     user_like_status = None
@@ -121,12 +150,21 @@ def watch_video(request, video_id):
     video.view_count += 1
     video.save(update_fields=['view_count'])
     
+    # Get user's playlists for "Add to playlist" feature
+    user_playlists = []
+    if request.user.is_authenticated:
+        user_playlists = Playlist.objects.filter(owner=request.user)
+    
     context = {
         'video': video,
         'related_videos': related_videos,
         'is_following': is_following,
         'user_like_status': user_like_status,
         'comments': comments,
+        'user_playlists': user_playlists,
+        'current_playlist': current_playlist,
+        'playlist_videos': playlist_videos,
+        'current_index': current_index,
     }
     return render(request, 'content/watch.html', context)
 
@@ -678,13 +716,258 @@ def favorites(request):
 @login_required
 def playlists(request):
     """User's playlists."""
-    # Placeholder for playlists - would need to implement Playlist model
+    user_playlists = Playlist.objects.filter(owner=request.user).prefetch_related('playlistitem_set__video')
+    
     context = {
-        'playlists': [],
+        'playlists': user_playlists,
         'title': 'プレイリスト',
         'empty_message': 'プレイリストはありません'
     }
     return render(request, 'content/playlists.html', context)
+
+
+def public_playlists(request):
+    """Public playlists for all users."""
+    public_playlists_queryset = Playlist.objects.filter(
+        privacy='public'
+    ).prefetch_related('playlistitem_set__video').order_by('-created_at')
+    
+    # Search functionality
+    search_query = request.GET.get('search')
+    if search_query:
+        public_playlists_queryset = public_playlists_queryset.filter(
+            Q(title__icontains=search_query) | 
+            Q(description__icontains=search_query) |
+            Q(owner__username__icontains=search_query)
+        )
+    
+    # Pagination
+    paginator = Paginator(public_playlists_queryset, 12)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'playlists': page_obj,
+        'title': '公開プレイリスト',
+        'search_query': search_query,
+        'is_public_view': True,
+    }
+    return render(request, 'content/public_playlists.html', context)
+
+
+@login_required
+def create_playlist(request):
+    """Create a new playlist."""
+    if request.method == 'POST':
+        title = request.POST.get('title')
+        description = request.POST.get('description', '')
+        privacy = request.POST.get('privacy', 'public')
+        
+        if title:
+            playlist = Playlist.objects.create(
+                title=title,
+                description=description,
+                privacy=privacy,
+                owner=request.user
+            )
+            messages.success(request, 'プレイリストを作成しました')
+            return redirect('content:playlist_detail', pk=playlist.pk)
+        else:
+            messages.error(request, 'タイトルは必須です')
+    
+    return render(request, 'content/playlist_create.html')
+
+
+@login_required
+def playlist_detail(request, pk):
+    """View playlist details."""
+    playlist = get_object_or_404(Playlist, pk=pk)
+    
+    # Check if user can view this playlist
+    if playlist.privacy == 'private' and playlist.owner != request.user:
+        messages.error(request, 'このプレイリストは非公開です')
+        return redirect('content:playlists')
+    
+    items = PlaylistItem.objects.filter(playlist=playlist).select_related('video').order_by('order')
+    
+    # Get available videos for adding (videos not in playlist)
+    available_videos = None
+    if playlist.owner == request.user:
+        existing_video_ids = items.values_list('video_id', flat=True)
+        available_videos = Video.objects.filter(
+            status='ready',
+            privacy__in=['public', 'unlisted']
+        ).exclude(id__in=existing_video_ids).order_by('-published_at')[:50]
+    
+    context = {
+        'playlist': playlist,
+        'items': items,
+        'is_owner': playlist.owner == request.user,
+        'available_videos': available_videos
+    }
+    return render(request, 'content/playlist_detail.html', context)
+
+
+@login_required
+def edit_playlist(request, pk):
+    """Edit playlist."""
+    playlist = get_object_or_404(Playlist, pk=pk, owner=request.user)
+    
+    if request.method == 'POST':
+        playlist.title = request.POST.get('title', playlist.title)
+        playlist.description = request.POST.get('description', '')
+        playlist.privacy = request.POST.get('privacy', playlist.privacy)
+        playlist.save()
+        messages.success(request, 'プレイリストを更新しました')
+        return redirect('content:playlist_detail', pk=playlist.pk)
+    
+    context = {
+        'playlist': playlist
+    }
+    return render(request, 'content/playlist_edit.html', context)
+
+
+@login_required
+def delete_playlist(request, pk):
+    """Delete playlist."""
+    playlist = get_object_or_404(Playlist, pk=pk, owner=request.user)
+    
+    if request.method == 'POST':
+        playlist.delete()
+        messages.success(request, 'プレイリストを削除しました')
+        return redirect('content:playlists')
+    
+    return redirect('content:playlist_detail', pk=pk)
+
+
+@login_required
+def add_to_playlist(request):
+    """Add video to playlist."""
+    if request.method == 'POST':
+        video_id = request.POST.get('video_id')
+        playlist_id = request.POST.get('playlist_id')
+        
+        video = get_object_or_404(Video, pk=video_id)
+        playlist = get_object_or_404(Playlist, pk=playlist_id, owner=request.user)
+        
+        # Check if video is already in playlist
+        if not PlaylistItem.objects.filter(playlist=playlist, video=video).exists():
+            # Get the next order number
+            max_order = PlaylistItem.objects.filter(playlist=playlist).aggregate(models.Max('order'))['order__max'] or 0
+            
+            PlaylistItem.objects.create(
+                playlist=playlist,
+                video=video,
+                order=max_order + 1
+            )
+            messages.success(request, f'{video.title}をプレイリストに追加しました')
+        else:
+            messages.info(request, 'この動画は既にプレイリストに含まれています')
+        
+        return redirect('content:watch', video_id=video_id)
+    
+    return redirect('content:home')
+
+
+@login_required 
+def remove_from_playlist(request, pk, item_id):
+    """Remove video from playlist."""
+    playlist = get_object_or_404(Playlist, pk=pk, owner=request.user)
+    item = get_object_or_404(PlaylistItem, pk=item_id, playlist=playlist)
+    
+    if request.method == 'POST':
+        item.delete()
+        messages.success(request, '動画をプレイリストから削除しました')
+    
+    return redirect('content:playlist_detail', pk=pk)
+
+
+@login_required
+def add_video_to_playlist(request, pk):
+    """Add video to playlist from playlist detail page."""
+    playlist = get_object_or_404(Playlist, pk=pk, owner=request.user)
+    
+    if request.method == 'POST':
+        video_id = request.POST.get('video_id')
+        if video_id:
+            video = get_object_or_404(Video, pk=video_id)
+            
+            # Check if video is already in playlist
+            if not PlaylistItem.objects.filter(playlist=playlist, video=video).exists():
+                # Get the next order number
+                max_order = PlaylistItem.objects.filter(playlist=playlist).aggregate(models.Max('order'))['order__max'] or 0
+                
+                PlaylistItem.objects.create(
+                    playlist=playlist,
+                    video=video,
+                    order=max_order + 1
+                )
+                messages.success(request, f'{video.title}をプレイリストに追加しました')
+            else:
+                messages.info(request, 'この動画は既にプレイリストに含まれています')
+    
+    return redirect('content:playlist_detail', pk=pk)
+
+
+@login_required
+def add_multiple_videos_to_playlist(request, pk):
+    """Add multiple videos to playlist at once."""
+    playlist = get_object_or_404(Playlist, pk=pk, owner=request.user)
+    
+    if request.method == 'POST':
+        import json
+        try:
+            data = json.loads(request.body)
+            video_ids = data.get('video_ids', [])
+            
+            if not video_ids:
+                return JsonResponse({'success': False, 'message': '動画が選択されていません'})
+            
+            added_count = 0
+            already_exists_count = 0
+            
+            # 現在のプレイリストの最大順序を取得
+            max_order = PlaylistItem.objects.filter(playlist=playlist).aggregate(models.Max('order'))['order__max'] or 0
+            
+            for video_id in video_ids:
+                try:
+                    video = Video.objects.get(pk=video_id, status='ready')
+                    
+                    # 既にプレイリストに含まれているかチェック
+                    if not PlaylistItem.objects.filter(playlist=playlist, video=video).exists():
+                        max_order += 1
+                        PlaylistItem.objects.create(
+                            playlist=playlist,
+                            video=video,
+                            order=max_order
+                        )
+                        added_count += 1
+                    else:
+                        already_exists_count += 1
+                        
+                except Video.DoesNotExist:
+                    continue
+            
+            # 結果メッセージを作成
+            messages = []
+            if added_count > 0:
+                messages.append(f'{added_count}本の動画をプレイリストに追加しました')
+            if already_exists_count > 0:
+                messages.append(f'{already_exists_count}本の動画は既にプレイリストに含まれています')
+            
+            return JsonResponse({
+                'success': True, 
+                'message': '、'.join(messages),
+                'added_count': added_count,
+                'already_exists_count': already_exists_count
+            })
+            
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'message': '無効なリクエストです'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': 'エラーが発生しました'})
+    
+    return JsonResponse({'success': False, 'message': '無効なリクエストメソッドです'})
 
 
 # Category Management Views (Admin only)

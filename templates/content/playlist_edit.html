@@ -1,0 +1,56 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}プレイリスト編集 - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-6 col-md-8">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h4>プレイリストを編集</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="title" class="form-label">タイトル <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="title" name="title" value="{{ playlist.title }}" required maxlength="200">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">説明</label>
+                            <textarea class="form-control" id="description" name="description" rows="3">{{ playlist.description }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="privacy" class="form-label">プライバシー設定</label>
+                            <select class="form-select" id="privacy" name="privacy">
+                                <option value="public" {% if playlist.privacy == 'public' %}selected{% endif %}>公開</option>
+                                <option value="unlisted" {% if playlist.privacy == 'unlisted' %}selected{% endif %}>限定公開</option>
+                                <option value="private" {% if playlist.privacy == 'private' %}selected{% endif %}>非公開</option>
+                            </select>
+                            <small class="form-text text-muted">
+                                公開: 誰でも見られます<br>
+                                限定公開: URLを知っている人のみ見られます<br>
+                                非公開: 自分のみ見られます
+                            </small>
+                        </div>
+                        
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg me-2"></i>更新
+                            </button>
+                            <a href="{% url 'content:playlist_detail' playlist.pk %}" class="btn btn-outline-secondary">
+                                キャンセル
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

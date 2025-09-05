@@ -7,9 +7,9 @@
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>{{ title }}</h2>
-        <button class="btn btn-primary">
+        <a href="{% url 'content:create_playlist' %}" class="btn btn-primary">
             <i class="bi bi-plus-lg me-2"></i>プレイリスト作成
-        </button>
+        </a>
     </div>
     
     {% if playlists %}
@@ -22,8 +22,8 @@
                             <p class="text-muted mb-2">{{ playlist.video_count }}本の動画</p>
                             <p class="card-text">{{ playlist.description|truncatechars:100 }}</p>
                             <div class="d-flex gap-2">
-                                <a href="#" class="btn btn-sm btn-outline-primary">表示</a>
-                                <a href="#" class="btn btn-sm btn-outline-secondary">編集</a>
+                                <a href="{% url 'content:playlist_detail' playlist.pk %}" class="btn btn-sm btn-outline-primary">表示</a>
+                                <a href="{% url 'content:edit_playlist' playlist.pk %}" class="btn btn-sm btn-outline-secondary">編集</a>
                             </div>
                         </div>
                     </div>
@@ -35,9 +35,9 @@
             <i class="bi bi-collection-play" style="font-size: 3rem; color: #ccc;"></i>
             <p class="mt-3 text-muted">{{ empty_message }}</p>
             <p class="text-muted">動画をプレイリストにまとめて管理しましょう</p>
-            <button class="btn btn-primary">
+            <a href="{% url 'content:create_playlist' %}" class="btn btn-primary">
                 <i class="bi bi-plus-lg me-2"></i>最初のプレイリストを作成
-            </button>
+            </a>
         </div>
     {% endif %}
 </div>

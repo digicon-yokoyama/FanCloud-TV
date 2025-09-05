@@ -13,6 +13,15 @@ urlpatterns = [
     path('history/', views.history, name='history'),
     path('favorites/', views.favorites, name='favorites'),
     path('playlists/', views.playlists, name='playlists'),
+    path('playlists/public/', views.public_playlists, name='public_playlists'),
+    path('playlists/create/', views.create_playlist, name='create_playlist'),
+    path('playlists/add/', views.add_to_playlist, name='add_to_playlist'),
+    path('playlists/<int:pk>/', views.playlist_detail, name='playlist_detail'),
+    path('playlists/<int:pk>/edit/', views.edit_playlist, name='edit_playlist'),
+    path('playlists/<int:pk>/delete/', views.delete_playlist, name='delete_playlist'),
+    path('playlists/<int:pk>/add-video/', views.add_video_to_playlist, name='add_video_to_playlist'),
+    path('playlists/<int:pk>/add-multiple/', views.add_multiple_videos_to_playlist, name='add_multiple_videos_to_playlist'),
+    path('playlists/<int:pk>/remove/<int:item_id>/', views.remove_from_playlist, name='remove_from_playlist'),
     
     # Video upload and management
     path('upload/', views.upload_video, name='upload_video'),

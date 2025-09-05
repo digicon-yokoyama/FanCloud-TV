@@ -421,6 +421,14 @@ document.addEventListener('DOMContentLoaded', function() {
                                 {{ video.dislike_count }}
                             </button>
                         {% endif %}
+                        
+                        {% if user.is_authenticated %}
+                            <button class="btn btn-outline-secondary me-2" data-bs-toggle="modal" data-bs-target="#playlistModal">
+                                <i class="bi bi-collection-play me-1"></i>
+                                保存
+                            </button>
+                        {% endif %}
+                        
                         <button class="btn btn-outline-secondary">
                             <i class="bi bi-share me-1"></i>
                             共有
@@ -522,6 +530,47 @@ document.addEventListener('DOMContentLoaded', function() {
 
         <!-- Sidebar Column -->
         <div class="col-lg-4">
+            <!-- Playlist Navigation -->
+            {% if current_playlist %}
+            <div class="playlist-navigation mb-4">
+                <div class="p-3 border-bottom bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">
+                            <i class="bi bi-collection-play me-2"></i>{{ current_playlist.title }}
+                        </h6>
+                        <small class="text-muted">{{ current_index|add:1 }} / {{ playlist_videos|length }}</small>
+                    </div>
+                </div>
+                <div style="max-height: 300px; overflow-y: auto;">
+                    {% for playlist_video in playlist_videos %}
+                    <a href="{% url 'content:watch' playlist_video.id %}?playlist={{ current_playlist.pk }}" 
+                       class="text-decoration-none {% if playlist_video.id == video.id %}bg-primary text-white{% else %}text-dark{% endif %}">
+                        <div class="playlist-video-item d-flex p-2 border-bottom {% if playlist_video.id == video.id %}bg-primary text-white{% endif %}">
+                            <div class="flex-shrink-0 me-2">
+                                <span class="badge {% if playlist_video.id == video.id %}bg-white text-primary{% else %}bg-secondary{% endif %}">{{ forloop.counter }}</span>
+                            </div>
+                            <img src="{{ playlist_video.thumbnail_url|default:'/static/img/thumbnail_placeholder.jpg' }}" 
+                                 class="flex-shrink-0 me-3" 
+                                 style="width: 60px; height: 34px; object-fit: cover; border-radius: 4px;"
+                                 alt="{{ playlist_video.title }}">
+                            <div class="flex-grow-1 min-width-0">
+                                <h6 class="mb-1 small text-truncate">{{ playlist_video.title }}</h6>
+                                <small class="{% if playlist_video.id == video.id %}text-white-50{% else %}text-muted{% endif %}">
+                                    {{ playlist_video.uploader.username }}
+                                </small>
+                            </div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+                <div class="p-2 bg-light d-flex justify-content-center">
+                    <a href="{% url 'content:playlist_detail' current_playlist.pk %}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-list-ul me-1"></i>プレイリストを見る
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+            
             <!-- Related Videos -->
             {% if related_videos %}
             <div class="related-videos">
@@ -547,6 +596,54 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
     </div>
 </div>
+
+<!-- Playlist Modal -->
+{% if user.is_authenticated %}
+<div class="modal fade" id="playlistModal" tabindex="-1" aria-labelledby="playlistModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="playlistModalLabel">プレイリストに保存</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                {% if user_playlists %}
+                    <form id="add-to-playlist-form" action="{% url 'content:add_to_playlist' %}" method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="video_id" value="{{ video.id }}">
+                        
+                        <div class="mb-3">
+                            <label for="playlist_id" class="form-label">プレイリストを選択</label>
+                            <select class="form-select" name="playlist_id" id="playlist_id" required>
+                                <option value="">選択してください</option>
+                                {% for playlist in user_playlists %}
+                                    <option value="{{ playlist.pk }}">{{ playlist.title }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'content:create_playlist' %}" class="btn btn-outline-primary">
+                                <i class="bi bi-plus-lg me-1"></i>新規作成
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg me-1"></i>追加
+                            </button>
+                        </div>
+                    </form>
+                {% else %}
+                    <p class="text-center text-muted mb-3">プレイリストがまだありません</p>
+                    <div class="text-center">
+                        <a href="{% url 'content:create_playlist' %}" class="btn btn-primary">
+                            <i class="bi bi-plus-lg me-1"></i>プレイリストを作成
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <!-- Add CSRF token for AJAX requests -->
 {% csrf_token %}
