@@ -1,6 +1,7 @@
 {% extends 'base/base.html' %}
 {% load static %}
 {% load humanize %}
+{% load avatar_tags %}
 
 {% block title %}プロフィール - {{ user.username }} - {{ block.super }}{% endblock %}
 
@@ -12,10 +13,7 @@
             <div class="card shadow-sm mb-4">
                 <div class="card-body text-center">
                     <div class="position-relative d-inline-block mb-3">
-                        <img src="https://ui-avatars.com/api/?name={{ user.username|urlencode }}&size=150&rounded=true" 
-                             alt="{{ user.username }}" 
-                             class="rounded-circle"
-                             style="width: 150px; height: 150px;">
+                        {% user_avatar user 150 "rounded-circle" %}
                         <button class="btn btn-sm btn-light position-absolute bottom-0 end-0 rounded-circle" 
                                 style="width: 40px; height: 40px;">
                             <i class="bi bi-camera"></i>

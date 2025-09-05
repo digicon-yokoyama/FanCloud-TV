@@ -1,5 +1,6 @@
 {% load humanize %}
 {% load time_utils %}
+{% load datetime_utils %}
 
 <div class="col">
     <div class="card video-card h-100">
@@ -85,7 +86,7 @@
             <!-- Upload Time -->
             {% if not video.is_live %}
             <div class="text-muted small">
-                <i class="bi bi-clock me-1"></i>{{ video.created_at|readable_time }}
+                <i class="bi bi-clock me-1"></i>{{ video.created_at|relative_time }}
             </div>
             {% endif %}
             

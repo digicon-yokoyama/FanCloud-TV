@@ -94,10 +94,21 @@ def profile(request):
         messages.success(request, 'プロフィールが更新されました')
         return redirect('accounts:profile')
     
+    # Get user's videos and playlists
+    from apps.content.models import Video, Playlist
+    user_videos = Video.objects.filter(
+        uploader=request.user,
+        status='ready'
+    ).order_by('-published_at')[:6]  # Latest 6 videos
+    
+    user_playlists = Playlist.objects.filter(
+        owner=request.user
+    ).order_by('-updated_at')[:6]  # Latest 6 playlists
+    
     context = {
         'profile': profile,
-        'user_videos': [],  # Add video queryset here when Video model is ready
-        'user_playlists': [],  # Add playlist queryset here when Playlist model is ready
+        'user_videos': user_videos,
+        'user_playlists': user_playlists,
     }
     return render(request, 'accounts/profile.html', context)
 

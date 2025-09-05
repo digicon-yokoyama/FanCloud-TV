@@ -48,7 +48,9 @@
       "Bash(npm run lint)",
       "Read(//var/folders/rn/d61zm0pj551342190c1qzvpw0000gn/T/TemporaryItems/NSIRD_screencaptureui_JodvBY/**)",
       "Bash(git rm:*)",
-      "Read(//var/folders/rn/d61zm0pj551342190c1qzvpw0000gn/T/TemporaryItems/NSIRD_screencaptureui_ex7fF4/**)"
+      "Read(//var/folders/rn/d61zm0pj551342190c1qzvpw0000gn/T/TemporaryItems/NSIRD_screencaptureui_ex7fF4/**)",
+      "Read(//var/folders/rn/d61zm0pj551342190c1qzvpw0000gn/T/TemporaryItems/NSIRD_screencaptureui_Zbfe6z/**)",
+      "Bash(mkdir:*)"
     ],
     "deny": [],
     "ask": []

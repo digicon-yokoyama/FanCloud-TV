@@ -1,5 +1,6 @@
 {% extends 'base/base.html' %}
 {% load humanize %}
+{% load datetime_utils %}
 
 {% block title %}{{ video.title }} - {{ block.super }}{% endblock %}
 
@@ -425,7 +426,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <h2 class="mb-2">{{ video.title }}</h2>
                         <div class="stats mb-3">
                             <span><i class="bi bi-eye me-1"></i>{{ video.view_count|intcomma }} 回視聴</span>
-                            <span class="ms-3"><i class="bi bi-calendar me-1"></i>{{ video.published_at|date:"Y年m月d日" }}</span>
+                            <span class="ms-3"><i class="bi bi-calendar me-1"></i>{{ video.published_at|format_datetime:'date' }}</span>
                             {% if video.duration > 0 %}
                                 <span class="ms-3"><i class="bi bi-clock me-1"></i>{{ video.duration_formatted }}</span>
                             {% endif %}

@@ -38,7 +38,6 @@ collected_static/
 
 # Environment variables
 .env
-.env.*
 !.env.example
 
 # Virtual environments

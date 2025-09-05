@@ -1,5 +1,6 @@
 {% extends 'base/base.html' %}
 {% load humanize %}
+{% load avatar_tags %}
 
 {% block title %}{{ channel_user.username }} - チャンネル{% endblock %}
 
@@ -73,13 +74,7 @@
         <div class="row align-items-center">
             <div class="col-md-8">
                 <div class="d-flex align-items-center">
-                    {% if channel_user.avatar %}
-                        <img src="{{ channel_user.avatar.url }}" class="channel-avatar me-3" alt="{{ channel_user.username }}">
-                    {% else %}
-                        <div class="channel-avatar me-3 d-flex align-items-center justify-content-center bg-light text-dark">
-                            <i class="bi bi-person-fill" style="font-size: 2rem;"></i>
-                        </div>
-                    {% endif %}
+                    {% user_avatar channel_user 80 "channel-avatar me-3" %}
                     <div>
                         <h2 class="mb-0">{{ channel_user.username }}</h2>
                         {% if channel_user.first_name or channel_user.last_name %}

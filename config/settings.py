@@ -29,6 +29,7 @@ SHARED_APPS = [
     'rest_framework',
     'channels',
     'corsheaders',
+    'apps.core',
     'apps.tenants',
     'apps.accounts',
 ]

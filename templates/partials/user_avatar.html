@@ -1,0 +1,23 @@
+{% load avatar_tags %}
+
+<div class="d-flex align-items-center">
+    {% user_avatar user size "rounded-circle" %}
+    
+    {% if show_name %}
+        <div class="ms-2">
+            {% if link_to_channel %}
+                <a href="{% url 'accounts:channel' user.username %}" class="text-decoration-none text-dark">
+                    <strong>{{ user.username }}</strong>
+                </a>
+                {% if user.first_name or user.last_name %}
+                    <div class="small text-muted">{{ user.first_name }} {{ user.last_name }}</div>
+                {% endif %}
+            {% else %}
+                <strong>{{ user.username }}</strong>
+                {% if user.first_name or user.last_name %}
+                    <div class="small text-muted">{{ user.first_name }} {{ user.last_name }}</div>
+                {% endif %}
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
