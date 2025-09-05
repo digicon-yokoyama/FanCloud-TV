@@ -145,6 +145,44 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
+    // Favorite functionality
+    const favoriteBtn = document.getElementById('favorite-btn');
+    if (favoriteBtn) {
+        favoriteBtn.addEventListener('click', function() {
+            const videoId = this.dataset.videoId;
+            
+            // Disable button during request
+            this.disabled = true;
+            const originalContent = this.innerHTML;
+            this.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>処理中...';
+            
+            fetch(`/content/api/video/${videoId}/favorite/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'added') {
+                    this.className = 'btn btn-danger';
+                    this.innerHTML = '<i class="bi bi-heart-fill me-1"></i>お気に入り';
+                } else if (data.status === 'removed') {
+                    this.className = 'btn btn-outline-danger';
+                    this.innerHTML = '<i class="bi bi-heart me-1"></i>お気に入り';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                this.innerHTML = originalContent;
+            })
+            .finally(() => {
+                this.disabled = false;
+            });
+        });
+    }
+    
     // Like/Dislike functionality
     document.querySelectorAll('#like-btn, #dislike-btn').forEach(button => {
         button.addEventListener('click', function() {
@@ -182,7 +220,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         dislikeBtn.className = 'btn btn-outline-secondary me-2';
                     } else {
                         likeBtn.className = 'btn btn-outline-primary me-2';
-                        dislikeBtn.className = 'btn btn-outline-danger me-2';
+                        dislikeBtn.className = 'btn btn-danger me-2';
                     }
                 }
             })
@@ -406,10 +444,21 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <i class="bi bi-hand-thumbs-up me-1"></i>
                                 <span id="like-count">{{ video.like_count }}</span>
                             </button>
-                            <button id="dislike-btn" class="btn {% if user_like_status == 'dislike' %}btn-outline-danger{% else %}btn-outline-secondary{% endif %} me-2" 
+                            <button id="dislike-btn" class="btn {% if user_like_status == 'dislike' %}btn-danger{% else %}btn-outline-secondary{% endif %} me-2" 
                                     data-action="dislike" data-video-id="{{ video.id }}">
                                 <i class="bi bi-hand-thumbs-down me-1"></i>
                                 <span id="dislike-count">{{ video.dislike_count }}</span>
+                            </button>
+                            
+                            <button class="btn btn-outline-secondary me-2" data-bs-toggle="modal" data-bs-target="#playlistModal">
+                                <i class="bi bi-collection-play me-1"></i>
+                                保存
+                            </button>
+                            
+                            <button id="favorite-btn" class="btn {% if is_favorited %}btn-danger{% else %}btn-outline-danger{% endif %}" 
+                                    data-video-id="{{ video.id }}">
+                                <i class="bi bi-heart{% if is_favorited %}-fill{% endif %} me-1"></i>
+                                お気に入り
                             </button>
                         {% else %}
                             <button class="btn btn-outline-primary me-2" onclick="alert('ライクするにはログインが必要です')">
@@ -420,19 +469,12 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <i class="bi bi-hand-thumbs-down me-1"></i>
                                 {{ video.dislike_count }}
                             </button>
-                        {% endif %}
-                        
-                        {% if user.is_authenticated %}
-                            <button class="btn btn-outline-secondary me-2" data-bs-toggle="modal" data-bs-target="#playlistModal">
-                                <i class="bi bi-collection-play me-1"></i>
-                                保存
+                            
+                            <button class="btn btn-outline-danger" onclick="alert('お気に入りに追加するにはログインが必要です')">
+                                <i class="bi bi-heart me-1"></i>
+                                お気に入り
                             </button>
                         {% endif %}
-                        
-                        <button class="btn btn-outline-secondary">
-                            <i class="bi bi-share me-1"></i>
-                            共有
-                        </button>
                     </div>
                 </div>
                 

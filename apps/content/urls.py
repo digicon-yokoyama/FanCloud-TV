@@ -32,6 +32,7 @@ urlpatterns = [
     
     # Comments and likes
     path('api/video/<int:video_id>/like/', views.like_video, name='like_video'),
+    path('api/video/<int:video_id>/favorite/', views.favorite_video, name='favorite_video'),
     path('api/video/<int:video_id>/comment/', views.add_comment, name='add_comment'),
     path('api/comment/<int:comment_id>/delete/', views.delete_comment, name='delete_comment'),
     

@@ -200,3 +200,16 @@ class Comment(models.Model):
     @property
     def is_reply(self):
         return self.parent is not None
+
+
+class VideoFavorite(models.Model):
+    """Video favorites/bookmarks."""
+    video = models.ForeignKey(Video, on_delete=models.CASCADE, related_name='favorites')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ('video', 'user')
+    
+    def __str__(self):
+        return f"{self.user.username} favorited {self.video.title}"

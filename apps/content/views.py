@@ -12,7 +12,7 @@ from django.utils import timezone
 from django.core.files.storage import default_storage
 import uuid
 import os
-from .models import Video, VideoCategory, VideoTag, Comment, VideoLike, VideoView, Playlist, PlaylistItem
+from .models import Video, VideoCategory, VideoTag, Comment, VideoLike, VideoView, VideoFavorite, Playlist, PlaylistItem
 from apps.accounts.permissions import tenant_admin_required
 
 
@@ -114,6 +114,7 @@ def watch_video(request, video_id):
     # Check if current user is following the uploader
     is_following = False
     user_like_status = None
+    is_favorited = False
     if request.user.is_authenticated:
         from apps.accounts.models import Follow
         is_following = Follow.objects.filter(
@@ -127,6 +128,12 @@ def watch_video(request, video_id):
             user_like_status = 'like' if like_obj.is_like else 'dislike'
         except VideoLike.DoesNotExist:
             user_like_status = None
+            
+        # Check if video is favorited by user
+        is_favorited = VideoFavorite.objects.filter(
+            video=video, 
+            user=request.user
+        ).exists()
     
     # Get related videos
     related_videos = Video.objects.filter(
@@ -160,6 +167,7 @@ def watch_video(request, video_id):
         'related_videos': related_videos,
         'is_following': is_following,
         'user_like_status': user_like_status,
+        'is_favorited': is_favorited,
         'comments': comments,
         'user_playlists': user_playlists,
         'current_playlist': current_playlist,
@@ -694,14 +702,13 @@ def history(request):
 @login_required 
 def favorites(request):
     """User's favorite videos."""
-    # Get liked videos as favorites
-    liked_videos = Video.objects.filter(
-        likes__user=request.user,
-        likes__is_like=True,
+    # Get favorite videos from VideoFavorite model
+    favorite_videos = Video.objects.filter(
+        favorites__user=request.user,
         status='ready'
-    ).order_by('-likes__created_at')
+    ).order_by('-favorites__created_at')
     
-    paginator = Paginator(liked_videos, 12)
+    paginator = Paginator(favorite_videos, 12)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
@@ -1089,3 +1096,28 @@ def delete_category(request, category_id):
     category.delete()
     messages.success(request, f'カテゴリ「{category_name}」を削除しました。')
     return redirect('content:admin_categories')
+
+
+@login_required
+@require_POST
+def favorite_video(request, video_id):
+    """Add/remove video from favorites."""
+    video = get_object_or_404(Video, id=video_id)
+    
+    try:
+        # Check if already favorited
+        existing_favorite = VideoFavorite.objects.get(video=video, user=request.user)
+        # Remove from favorites
+        existing_favorite.delete()
+        return JsonResponse({
+            'status': 'removed',
+            'favorited': False
+        })
+        
+    except VideoFavorite.DoesNotExist:
+        # Add to favorites
+        VideoFavorite.objects.create(video=video, user=request.user)
+        return JsonResponse({
+            'status': 'added',
+            'favorited': True
+        })
